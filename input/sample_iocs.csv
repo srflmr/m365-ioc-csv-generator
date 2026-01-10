@@ -1,0 +1,28 @@
+# Sample CSV file for M365 IOC CSV Generator
+# This file contains various indicators of compromise for testing
+
+# IPv4 Addresses
+192.168.1.1
+10.0.0.1
+172.16.0.1
+
+# Domain Names
+malicious-domain.com
+evil-site.example.net
+suspicious.io
+
+# URLs
+https://phishing-attack.com/login
+http://malware-download.net/bad.exe
+
+# SHA256 Hashes
+4428c4149059c9817e56c22af35c8466a2b395019f7de8c0dd25d4d51f0f0ba3
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+# SHA1 Hashes
+da39a3ee5e6b4b0d3255bfef95601890afd80709
+adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+
+# URLs without scheme (will be auto-fixed)
+example.com/path
+www.suspicious-site.org/malware

@@ -1,0 +1,75 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# PyInstaller
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.pytest_cache/
+.coverage
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.project
+.pydevproject
+
+# Output files (user generated CSVs - keep directory but ignore contents)
+output/*
+!output/.gitkeep
+
+# Input files (user's data - keep directory but only commit samples)
+input/*
+!input/.gitkeep
+!input/sample*.csv
+!input/sample*.txt
+
+# Logs (keep directory but ignore contents)
+logs/*
+!logs/.gitkeep
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+.requirements_installed
+setup.log
+crash_dump.json
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~

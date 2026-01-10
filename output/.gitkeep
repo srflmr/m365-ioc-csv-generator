@@ -1,0 +1,2 @@
+# This directory stores generated CSV files for Microsoft 365 Defender import.
+# The directory structure is maintained in git, but generated files are ignored.
