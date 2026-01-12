@@ -25,7 +25,8 @@ from textual.widgets import (
 from m365_ioc_csv.core.config import Settings
 from m365_ioc_csv.core.csv_parser import CSVParser
 from m365_ioc_csv.core.ioc_detector import IoCDetector, IoCType
-from m365_ioc_csv.core.csv_writer import CSVWriter, OutputMode
+from m365_ioc_csv.core.ioc_unmasker import IoCUnmasker
+from m365_ioc_csv.core.csv_writer import CSVWriter
 from m365_ioc_csv.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -110,6 +111,7 @@ class ProcessingScreen(Screen):
         self.settings = settings
         self.skip_header = skip_header
         self.parser = CSVParser()
+        self.unmasker = IoCUnmasker()
         self.detector = IoCDetector()
         self.writer = CSVWriter(settings)
         self.result_data: dict[str, Any] = {}
@@ -156,11 +158,37 @@ class ProcessingScreen(Screen):
             await self._update_result_row("CSV Parsing", "Complete",
                                          f"{parse_result.total_rows} rows, {len(parse_result.ioc_values)} values")
 
-            # Stage 2: Detect IoC types
-            await self._update_progress(30, "Detecting IoC types...")
+            # Stage 2: Unmask obfuscated IoCs
+            await self._update_progress(25, "Unmasking obfuscated IoCs...")
+            unmasked_count = 0
+            processed_values = []
+
+            for value in parse_result.ioc_values:
+                # Check if value appears to be masked
+                if self.unmasker.is_masked(value):
+                    report = await asyncio.to_thread(self.unmasker.unmask, value)
+                    if report.was_unmasked and report.best_result:
+                        # Use unmasked value
+                        processed_values.append(report.best_result.unmasked)
+                        unmasked_count += 1
+                        logger.debug(f"Unmasked: {value[:20]}... -> {report.best_result.unmasked[:20]}...")
+                    else:
+                        # Keep original
+                        processed_values.append(value)
+                else:
+                    # Not masked, use original
+                    processed_values.append(value)
+
+            if unmasked_count > 0:
+                await self._update_result_row("IoC Unmasking", "Complete",
+                                             f"{unmasked_count} obfuscated values unmasked")
+
+            # Stage 3: Detect IoC types
+            await self._update_progress(40, "Detecting IoC types...")
             ioc_dict: dict[str, list[str]] = {
                 IoCType.FILE_SHA256.value: [],
                 IoCType.FILE_SHA1.value: [],
+                IoCType.FILE_MD5.value: [],
                 IoCType.IP_ADDRESS.value: [],
                 IoCType.DOMAIN_NAME.value: [],
                 IoCType.URL.value: [],
@@ -168,16 +196,14 @@ class ProcessingScreen(Screen):
 
             unknown_values = []
 
-            for value in parse_result.ioc_values:
+            for value in processed_values:
                 match = self.detector.detect(value)
 
                 if match.type == IoCType.URL_NO_SCHEME:
-                    # Auto-fix URL
-                    fixed_url = self.detector.fix_url_scheme(
-                        value,
-                        self.settings.url_prefix_scheme
-                    )
-                    ioc_dict[IoCType.URL.value].append(fixed_url)
+                    # Export as URL indicator WITHOUT auto-fixing scheme
+                    # Microsoft Defender will handle scheme validation
+                    ioc_dict[IoCType.URL.value].append(value)
+                    logger.info(f"URL without scheme exported as-is: {value[:50]}...")
                 elif match.type == IoCType.UNKNOWN:
                     unknown_values.append(value)
                 elif match.is_valid:
@@ -188,24 +214,22 @@ class ProcessingScreen(Screen):
             await self._update_result_row("IoC Detection", "Complete",
                                          f"{total_detected} IoCs detected")
 
-            # Stage 3: Write CSV files
+            # Stage 4: Write CSV files
             await self._update_progress(60, "Writing CSV files...")
 
             output_dir = self.settings.output_dir
-            output_mode = OutputMode(self.settings.output_mode)
 
             write_result = await asyncio.to_thread(
                 self.writer.write_iocs,
                 ioc_dict,
                 output_dir,
-                output_mode,
                 self.input_file.name
             )
 
             await self._update_result_row("CSV Generation", "Complete",
                                          f"{write_result.total_files} files created")
 
-            # Stage 4: Handle unknown values
+            # Stage 5: Handle unknown values
             if unknown_values:
                 await self._update_progress(90, "Writing unknown values...")
                 unknown_file = await asyncio.to_thread(

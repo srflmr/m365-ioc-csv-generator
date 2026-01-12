@@ -1,0 +1,11 @@
+indicator_type,obfuscated_value
+domain,aHR0cHM6Ly9ldmlsLmNvbQ==
+url,hxxps://malware[.]com/path
+domain,%65%76%69%6C%2E%63%6F%6D
+url,https://normal-domain.com/api
+ip,%31%39%32%2E%31%36%38%2E%31%2E%31
+hash,68747470733a2f2f6576696c2e636f6d
+domain,moc.evil//:sptth
+file_sha256,YTNiMWM1ZDk4MmIyNDk5NzFmYzY1ODlmMjk0Zjk1MTJmNTRkYzYwOWEwMGI2MWY1MTE2ZmY4ZTQzZjk3MmZlNw==
+url,hxxp://phishing[.]site[.]com/login
+domain,evil[.]example[.]com

@@ -17,7 +17,6 @@ dist/
 htmlcov/
 .pytest_cache/
 .coverage
-.pytest_cache/
 
 # Virtual environments
 venv/
@@ -41,7 +40,7 @@ output/*
 input/*
 !input/.gitkeep
 !input/sample*.csv
-!input/sample*.txt
+!input/test_*.csv
 
 # Logs (keep directory but ignore contents)
 logs/*
@@ -60,6 +59,13 @@ Thumbs.db
 .requirements_installed
 setup.log
 crash_dump.json
+
+# Test directories (temporary)
+test_dir*/
+test_*/
+
+# Temporary scripts
+check_python_version.py
 
 # MyPy
 .mypy_cache/

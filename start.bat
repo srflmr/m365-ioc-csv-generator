@@ -37,7 +37,7 @@ echo.
 
 REM Check Python version (minimum 3.10)
 echo [2/6] Validating Python version...
-%PYTHON_CMD% -c "import sys; exit(0 if sys.version_info ^= (3, 10) else 1)" 2>nul
+%PYTHON_CMD% check_python_version.py
 if %ERRORLEVEL% neq 0 (
     echo   [ERROR] Python 3.10 or higher is required
     %PYTHON_CMD% --version
@@ -60,9 +60,23 @@ if not exist "%VENV_DIR%" (
         pause
         exit /b 1
     )
+    REM Verify venv was created successfully
+    if not exist "%VENV_DIR%\Scripts\activate.bat" (
+        echo   [ERROR] Virtual environment creation failed - activate.bat not found
+        echo   Check %LOG_FILE% for details
+        pause
+        exit /b 1
+    )
     echo   [OK] Virtual environment created
     del "%REQUIREMENTS_INSTALLED%" 2>nul
 ) else (
+    REM Verify existing venv is valid
+    if not exist "%VENV_DIR%\Scripts\activate.bat" (
+        echo   [ERROR] Existing virtual environment is corrupted
+        echo   Please delete the 'venv' folder and run this script again
+        pause
+        exit /b 1
+    )
     echo   [OK] Virtual environment already exists
 )
 echo.

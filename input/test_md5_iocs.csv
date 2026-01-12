@@ -1,0 +1,26 @@
+# Test file with MD5 hashes
+# Including all IoC types
+
+# SHA256 hashes
+4428c4149059c9817e56c22af35c8466a2b395019f7de8c0dd25d4d51f0f0ba3
+
+# SHA1 hashes
+da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+# MD5 hashes
+d41d8cd98f00b204e9800998ecf8427e
+5d41402abc4b2a76b9719d911017c592
+0cc175b9c0f1b6a831c399e269772661
+ACBD18DB4CC2F85CEDEF654FCCC4A4D8
+
+# IPv4 addresses
+192.168.1.100
+10.0.0.50
+
+# Domain names
+malicious-domain.com
+evil-site.example.net
+
+# URLs
+https://phishing-attack.com/login
+www.suspicious-site.org

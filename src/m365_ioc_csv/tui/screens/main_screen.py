@@ -346,19 +346,7 @@ class MainScreen(Screen):
                         classes="config-input"
                     )
 
-                # Output mode
-                with Horizontal(classes="config-row"):
-                    yield Label("Output:", classes="config-label")
-                    yield Select(
-                        [
-                            ("Separate CSVs", "separate"),
-                            ("Combined CSV", "combined"),
-                            ("Both", "both"),
-                        ],
-                        value="separate",
-                        id="output-mode-select",
-                        classes="config-input"
-                    )
+                # Note: Output mode is now always "separate" - separate CSV files per IoC type
 
         # === CELL 3: Summary Panel (Left, bottom row) ===
         with Container(id="summary-panel"):
@@ -384,6 +372,7 @@ class MainScreen(Screen):
         table.add_row("Total IoCs", "0")
         table.add_row("FileSha256", "0")
         table.add_row("FileSha1", "0")
+        table.add_row("FileMd5", "0")
         table.add_row("IpAddress", "0")
         table.add_row("DomainName", "0")
         table.add_row("Url", "0")
@@ -561,7 +550,7 @@ class MainScreen(Screen):
         self.settings.custom_title = self.query_one("#custom-title", Input).value
         self.settings.custom_description = self.query_one("#custom-description", Input).value
         self.settings.generate_alert = self.query_one("#alert-select", Select).value == "true"
-        self.settings.output_mode = self.query_one("#output-mode-select", Select).value
+        # Note: Output mode is now always "separate" - removed from UI
 
         # Handle expiration
         expiration = self.query_one("#expiration-select", Select).value
@@ -582,6 +571,7 @@ class MainScreen(Screen):
             table.add_row("Total IoCs", "0")
             table.add_row("FileSha256", "0")
             table.add_row("FileSha1", "0")
+            table.add_row("FileMd5", "0")
             table.add_row("IpAddress", "0")
             table.add_row("DomainName", "0")
             table.add_row("Url", "0")
@@ -590,7 +580,7 @@ class MainScreen(Screen):
             table.add_row("Selected File", self.selected_file.name if self.selected_file else "-")
             table.add_row("Total IoCs", str(total))
 
-            for ioc_type in ["FileSha256", "FileSha1", "IpAddress", "DomainName", "Url"]:
+            for ioc_type in ["FileSha256", "FileSha1", "FileMd5", "IpAddress", "DomainName", "Url"]:
                 count = self.ioc_counts.get(ioc_type, 0)
                 table.add_row(ioc_type, str(count))
 

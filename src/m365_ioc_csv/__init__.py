@@ -16,15 +16,19 @@ __license__ = "MIT"
 # Public API
 from m365_ioc_csv.core.config import Settings, get_app_config
 from m365_ioc_csv.core.ioc_detector import IoCDetector, IoCType
+from m365_ioc_csv.core.ioc_unmasker import IoCUnmasker, UnmaskTechnique, UnmaskResult, UnmaskReport
 from m365_ioc_csv.core.csv_parser import CSVParser
-from m365_ioc_csv.core.csv_writer import CSVWriter, OutputMode
+from m365_ioc_csv.core.csv_writer import CSVWriter
 
 __all__ = [
     "Settings",
     "get_app_config",
     "IoCDetector",
     "IoCType",
+    "IoCUnmasker",
+    "UnmaskTechnique",
+    "UnmaskResult",
+    "UnmaskReport",
     "CSVParser",
     "CSVWriter",
-    "OutputMode",
 ]

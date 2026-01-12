@@ -56,12 +56,9 @@ class Settings:
         generate_alert: Whether to generate an alert
         rbac_groups: RBAC group names (semicolon-separated)
         mitre_techniques: MITRE ATT&CK techniques (comma-separated)
-        url_prefix_scheme: Scheme to prefix for URLs without scheme
         custom_title: Custom title for IoCs (empty = use default)
         custom_description: Custom description for IoCs (empty = use default)
-        output_mode: Output mode (separate, combined, both)
         max_rows_per_file: Maximum rows per output file (default 500)
-        fix_urls_without_scheme: Whether to auto-fix URLs without scheme
     """
 
     # Basic settings
@@ -78,18 +75,13 @@ class Settings:
     # Advanced settings
     rbac_groups: str = ""
     mitre_techniques: str = ""
-    url_prefix_scheme: str = "https://"
 
     # Custom fields
     custom_title: str = ""
     custom_description: str = ""
 
     # Output settings
-    output_mode: str = "separate"  # separate, combined, both
     max_rows_per_file: int = 500
-
-    # URL fixing
-    fix_urls_without_scheme: bool = True
 
     # Directory settings
     input_dir: Path = field(default_factory=lambda: Path("input"))
@@ -119,12 +111,6 @@ class Settings:
         if self.max_rows_per_file < 1:
             logger.warning("max_rows_per_file must be positive, using default 500")
             self.max_rows_per_file = 500
-
-        # Validate output mode
-        valid_modes = ["separate", "combined", "both"]
-        if self.output_mode not in valid_modes:
-            logger.warning(f"Invalid output mode '{self.output_mode}', using default 'separate'")
-            self.output_mode = "separate"
 
     def to_dict(self) -> dict:
         """Convert settings to dictionary."""

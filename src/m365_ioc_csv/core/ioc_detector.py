@@ -4,6 +4,7 @@ IoC (Indicator of Compromise) Detection Module.
 Provides robust detection and categorization of various IoC types:
 - File SHA256 hashes (64 hex characters)
 - File SHA1 hashes (40 hex characters)
+- File MD5 hashes (32 hex characters) - Note: MD5 is cryptographically weak
 - IPv4 addresses
 - Domain names
 - URLs (with or without scheme)
@@ -31,6 +32,7 @@ class IoCType(Enum):
 
     FILE_SHA256 = "FileSha256"
     FILE_SHA1 = "FileSha1"
+    FILE_MD5 = "FileMd5"
     IP_ADDRESS = "IpAddress"
     DOMAIN_NAME = "DomainName"
     URL = "Url"
@@ -69,6 +71,9 @@ class IoCMatch:
         elif self.type == IoCType.FILE_SHA1:
             if not IoCDetector.SHA1_RE.fullmatch(self.value):
                 raise ValidationError(f"Invalid SHA1 hash: {self.value}", "FileSha1")
+        elif self.type == IoCType.FILE_MD5:
+            if not IoCDetector.MD5_RE.fullmatch(self.value):
+                raise ValidationError(f"Invalid MD5 hash: {self.value}", "FileMd5")
         elif self.type == IoCType.IP_ADDRESS:
             try:
                 ipaddress.IPv4Address(self.value)
@@ -96,6 +101,7 @@ class IoCDetector:
     # Pre-compiled regex patterns for performance
     SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
     SHA1_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+    MD5_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
     # Strict domain validation (RFC compliant)
     # - Labels 1-63 chars, alphanumeric or hyphen (not start/end with hyphen)
@@ -153,18 +159,23 @@ class IoCDetector:
             logger.debug(f"Detected SHA1 hash: {cleaned[:16]}...")
             return IoCMatch(value=cleaned, type=IoCType.FILE_SHA1)
 
-        # 4. IPv4 address
+        # 4. MD5 hash (32 hex chars)
+        if self.MD5_RE.fullmatch(cleaned):
+            logger.warning(f"Detected MD5 hash (weak): {cleaned[:16]}... - MD5 is cryptographically broken and should not be relied upon for security purposes")
+            return IoCMatch(value=cleaned, type=IoCType.FILE_MD5)
+
+        # 5. IPv4 address
         if self._is_ipv4(cleaned):
             logger.debug(f"Detected IPv4 address: {cleaned}")
             return IoCMatch(value=cleaned, type=IoCType.IP_ADDRESS)
 
-        # 5. URL without scheme (check BEFORE domain, since www.example.com looks like domain)
+        # 6. URL without scheme (check BEFORE domain, since www.example.com looks like domain)
         # Priority: www. prefix OR contains slash
         if self._looks_like_url_no_scheme(cleaned):
             logger.debug(f"Detected URL without scheme: {cleaned[:50]}...")
             return IoCMatch(value=cleaned, type=IoCType.URL_NO_SCHEME)
 
-        # 6. Domain name (no scheme/path, no www.)
+        # 7. Domain name (no scheme/path, no www.)
         if self.DOMAIN_RE.fullmatch(cleaned):
             logger.debug(f"Detected domain name: {cleaned}")
             return IoCMatch(value=cleaned, type=IoCType.DOMAIN_NAME)
@@ -274,9 +285,15 @@ class IoCDetector:
         # Check if remaining part looks like a domain
         return bool(IoCDetector.DOMAIN_RE.fullmatch(host))
 
-    def fix_url_scheme(self, url: str, scheme: str = "https://") -> str:
+    @staticmethod
+    def fix_url_scheme(url: str, scheme: str = "https://") -> str:
         """
         Add scheme to URL that doesn't have one.
+
+        .. deprecated::
+            This method is deprecated and will be removed in a future version.
+            URLs without scheme are now exported as-is to Microsoft Defender,
+            which handles scheme validation internally based on threat intelligence.
 
         Args:
             url: URL value (may or may not have scheme)
@@ -290,7 +307,15 @@ class IoCDetector:
             detector.fix_url_scheme("example.com/path")
             # Returns: "https://example.com/path"
         """
-        if url.lower().startswith(self.URL_SCHEMES):
+        import warnings
+        warnings.warn(
+            "fix_url_scheme() is deprecated. URLs are now exported as-is to "
+            "Microsoft Defender, which handles scheme validation internally.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
+        if url.lower().startswith(("http://", "https://")):
             return url
 
         # Ensure scheme ends with ://
@@ -322,6 +347,7 @@ class IoCDetector:
         return [
             IoCType.FILE_SHA256.value,
             IoCType.FILE_SHA1.value,
+            IoCType.FILE_MD5.value,
             IoCType.IP_ADDRESS.value,
             IoCType.DOMAIN_NAME.value,
             IoCType.URL.value,

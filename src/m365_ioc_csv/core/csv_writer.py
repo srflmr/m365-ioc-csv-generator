@@ -51,6 +51,7 @@ CSV_HEADER = [
 DEFAULT_RECOMMENDED = {
     IoCType.FILE_SHA256: "Block execution",
     IoCType.FILE_SHA1: "Block execution",
+    IoCType.FILE_MD5: "Block execution",
     IoCType.IP_ADDRESS: "Block network connection",
     IoCType.DOMAIN_NAME: "Block domain",
     IoCType.URL: "Block URL",
@@ -60,6 +61,7 @@ DEFAULT_RECOMMENDED = {
 DEFAULT_CATEGORY = {
     IoCType.FILE_SHA256: "Execution",
     IoCType.FILE_SHA1: "Execution",
+    IoCType.FILE_MD5: "Execution",
     IoCType.IP_ADDRESS: "InitialAccess",
     IoCType.DOMAIN_NAME: "CommandAndControl",
     IoCType.URL: "InitialAccess",
@@ -67,15 +69,6 @@ DEFAULT_CATEGORY = {
 
 # Maximum rows per CSV file (Microsoft best practice)
 MAX_ROWS_PER_FILE = 500
-
-
-@unique
-class OutputMode(Enum):
-    """Output mode for generated files."""
-
-    SEPARATE = "separate"  # One CSV per IoC type
-    COMBINED = "combined"  # Single CSV with all types
-    BOTH = "both"  # Both separate and combined
 
 
 @dataclass
@@ -188,16 +181,14 @@ class CSVWriter:
         self,
         ioc_dict: dict[str, list[str]],
         output_dir: Path,
-        mode: OutputMode = OutputMode.SEPARATE,
         source_file: str = "import"
     ) -> WriteResult:
         """
-        Write IoCs to CSV file(s).
+        Write IoCs to CSV file(s) - ALWAYS separate files per IoC type.
 
         Args:
             ioc_dict: Dictionary mapping IoC types to lists of values
-            output_dir: Directory to write output files
-            mode: Output mode (separate, combined, or both)
+            output_dir: Base output directory
             source_file: Name of source file (for description)
 
         Returns:
@@ -206,13 +197,12 @@ class CSVWriter:
         proc_log = ProcessingLogger("CSV Writing")
         proc_log.start(f"Writing IoCs to {output_dir}")
 
-        # Ensure output directory exists
-        self.error_handler.validate_directory(output_dir, create=True, writable=True)
+        # Create timestamped subdirectory
+        timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_subdir = output_dir / f"ioc_export_{timestamp}"
+        self.error_handler.validate_directory(output_subdir, create=True, writable=True)
 
         result = WriteResult()
-
-        # Get timestamp for filenames
-        timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Generate rows for each IoC type
         rows_by_type: dict[str, list[list[str]]] = {}
@@ -224,37 +214,22 @@ class CSVWriter:
             rows_by_type[ioc_type] = rows
             result.ioc_counts[ioc_type] = len(values)
 
-        # Write separate CSVs (one per type)
-        if mode in (OutputMode.SEPARATE, OutputMode.BOTH):
-            for ioc_type, rows in rows_by_type.items():
-                files = self._write_csv_files(
-                    rows,
-                    output_dir,
-                    f"{timestamp}_{ioc_type}_{self.settings.action}",
-                    "separate"
-                )
-                result.files_written.extend(files)
-
-        # Write combined CSV (all types)
-        if mode in (OutputMode.COMBINED, OutputMode.BOTH):
-            combined_rows = []
-            for rows in rows_by_type.values():
-                combined_rows.extend(rows)
-
-            if combined_rows:
-                files = self._write_csv_files(
-                    combined_rows,
-                    output_dir,
-                    f"{timestamp}_AllTypes_{self.settings.action}",
-                    "combined"
-                )
-                result.files_written.extend(files)
+        # ALWAYS write separate CSVs (one per type)
+        for ioc_type, rows in rows_by_type.items():
+            base_name = f"M365_IOC_{ioc_type}_{self.settings.action}_{timestamp}"
+            files = self._write_csv_files(
+                rows,
+                output_subdir,
+                base_name,
+                "separate"
+            )
+            result.files_written.extend(files)
 
         # Calculate totals
         result.total_files = len(result.files_written)
         result.total_rows = sum(result.ioc_counts.values())
 
-        proc_log.complete(f"Wrote {result.total_rows} rows to {result.total_files} files")
+        proc_log.complete(f"Wrote {result.total_rows} rows to {result.total_files} files in {output_subdir.name}")
         return result
 
     def _create_row(self, ioc_type: str, value: str, source_file: str) -> list[str]:
@@ -372,7 +347,7 @@ class CSVWriter:
 
         Args:
             unknown_values: List of unknown IoC values
-            output_dir: Directory to write to
+            output_dir: Base output directory
             timestamp: Optional timestamp for filename
 
         Returns:
@@ -381,12 +356,15 @@ class CSVWriter:
         if not unknown_values:
             return None
 
-        self.error_handler.validate_directory(output_dir, create=True, writable=True)
-
+        # Generate timestamp if not provided
         if timestamp is None:
             timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        file_path = output_dir / f"{timestamp}_UNKNOWN.txt"
+        # Use same subfolder pattern
+        output_subdir = output_dir / f"ioc_export_{timestamp}"
+        self.error_handler.validate_directory(output_subdir, create=True, writable=True)
+
+        file_path = output_subdir / f"M365_IOC_UNKNOWN_{timestamp}.txt"
 
         try:
             with open(file_path, "w", encoding="utf-8") as f:
