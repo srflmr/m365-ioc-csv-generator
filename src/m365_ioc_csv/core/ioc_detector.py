@@ -115,8 +115,9 @@ class IoCDetector:
         r"\.[A-Za-z]{2,63}$"  # TLD
     )
 
-    # URL schemes
-    URL_SCHEMES = ("http://", "https://")
+    # URL schemes - expanded to include common schemes
+    # Note: All schemes are treated as URLs for Microsoft Defender export
+    URL_SCHEMES = ("http://", "https://", "ftp://", "ssh://", "smtp://", "sftp://")
 
     def __init__(self) -> None:
         """Initialize the IoC detector."""
@@ -255,6 +256,8 @@ class IoCDetector:
         Patterns:
         - www. prefix (even without path)
         - Contains a slash (path) with domain-like host
+        - Host can optionally include a port number
+        - Domain/IP with port (even without path)
 
         Args:
             value: String to check
@@ -271,7 +274,27 @@ class IoCDetector:
             if len(parts) >= 2 and all(len(p) > 0 for p in parts):
                 return True
 
-        # Must contain slash for other URLs
+        # Check if contains port (with or without path)
+        if ":" in cleaned:
+            # Extract potential host part (before slash or end of string)
+            host_part = cleaned.split("/", 1)[0]
+
+            # Remove www. prefix for domain check
+            check_host = host_part[4:] if host_part.startswith("www.") else host_part
+
+            # If has port, split to get domain/IP part
+            if ":" in check_host:
+                domain_or_ip = check_host.rsplit(":", 1)[0]
+
+                # Check if it's a valid domain
+                if IoCDetector.DOMAIN_RE.fullmatch(domain_or_ip):
+                    return True
+
+                # Check if it's a valid IPv4 address
+                if IoCDetector._is_ipv4(domain_or_ip):
+                    return True
+
+        # Must contain slash for other URLs (without port)
         if "/" not in cleaned:
             return False
 
@@ -283,7 +306,24 @@ class IoCDetector:
             host = host[4:]
 
         # Check if remaining part looks like a domain
-        return bool(IoCDetector.DOMAIN_RE.fullmatch(host))
+        # First, try matching as-is (for domains without port)
+        if IoCDetector.DOMAIN_RE.fullmatch(host):
+            return True
+
+        # If that fails, check if it has a port and extract the domain part
+        if ":" in host:
+            # Split by last colon to handle IPv6 addresses (though unlikely here)
+            domain_part = host.rsplit(":", 1)[0]
+
+            # Check domain
+            if IoCDetector.DOMAIN_RE.fullmatch(domain_part):
+                return True
+
+            # Check IPv4
+            if IoCDetector._is_ipv4(domain_part):
+                return True
+
+        return False
 
     @staticmethod
     def fix_url_scheme(url: str, scheme: str = "https://") -> str:

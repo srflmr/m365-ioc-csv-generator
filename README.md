@@ -27,7 +27,16 @@ Interactive TUI tool to generate Microsoft 365 Defender bulk import CSV files fr
 | File MD5 | 32 hex characters | `441a7bf4...` |
 | IP Address | Dotted decimal | `192.168.1.1` |
 | Domain Name | FQDN | `evil.com` |
-| URL | Full URL with or without scheme | `https://evil.com/path` or `www.evil.com/path` |
+| URL | Full URL with scheme | `https://evil.com/path` |
+| URL (no scheme) | With www, path, or port | `www.evil.com/path` or `evil.com:443` |
+
+### Supported URL Schemes
+- `http://` - HTTP protocol
+- `https://` - HTTPS protocol
+- `ftp://` - FTP protocol
+- `ssh://` - SSH protocol
+- `smtp://` - SMTP protocol
+- `sftp://` - SFTP protocol
 
 ### IoC Unmasking Techniques
 - **Base64** - `aHR0cHM6Ly9ldmlsLmNvbQ==` → `https://evil.com`
@@ -135,18 +144,28 @@ output/
 ## URL Handling
 
 ### URL Detection Rules
-- URLs **with** scheme (`http://`, `https://`) → Exported as-is
-- URLs **without** scheme but with path or `www.` prefix → Exported as `Url` indicator as-is (no auto-fix)
-- Domain-only values (no path, no `www.`) → Exported as `DomainName` indicator
+- URLs **with** scheme (`http://`, `https://`, `ftp://`, etc.) → Exported as `Url`
+- URLs **without** scheme but with path, `www.` prefix, or port → Exported as `Url` (URL_NO_SCHEME)
+- Domain-only values (no path, no `www.`, no port) → Exported as `DomainName`
+
+### Port Handling
+Domains and IPs with ports are now properly detected:
+- `evil.com:443` → UrlNoScheme → Url CSV
+- `example.com:8080/path` → UrlNoScheme → Url CSV
+- `192.168.1.1:8080` → UrlNoScheme → Url CSV
+- `ftp://files.com:21` → Url → Url CSV
 
 ### Examples
 | Input | Detected As | Exported As |
 |-------|-------------|-------------|
 | `https://evil.com/path` | Url | `https://evil.com/path` |
 | `http://example.com` | Url | `http://example.com` |
+| `ftp://files.com:21` | Url | `ftp://files.com:21` |
 | `www.evil.com/path` | Url (no scheme) | `www.evil.com/path` |
 | `evil.com/path` | Url (no scheme) | `evil.com/path` |
 | `www.evil.com` | Url (no scheme) | `www.evil.com` |
+| `evil.com:443` | Url (no scheme) | `evil.com:443` |
+| `192.168.1.1:8080` | Url (no scheme) | `192.168.1.1:8080` |
 | `evil.com` | DomainName | `evil.com` |
 
 > **Note:** URLs without scheme are exported as-is. Microsoft Defender handles URL normalization internally based on threat intelligence.
@@ -219,6 +238,9 @@ MIT License - see [LICENSE](LICENSE) file for details
 - Changed output to timestamped subdirectories
 - Removed auto-fix for URLs without scheme (export as-is)
 - Updated file naming format
+- **Enhanced URL detection** - Added support for ftp://, ssh://, smtp://, sftp:// schemes
+- **Enhanced port handling** - Domains/IPs with ports now properly detected as UrlNoScheme
+- **Fixed reversed URL detection** - Pattern now correctly detects reversed URLs with protocols
 
 #### v1.0.0
 - Initial release

@@ -333,12 +333,20 @@ The tool detects IoCs in this order:
 |-------|-------------|-------------|-------|
 | `https://evil.com/path` | Url | `https://evil.com/path` | As-is |
 | `http://example.com` | Url | `http://example.com` | As-is |
+| `ftp://files.com:21` | Url | `ftp://files.com:21` | **New in v2.0** |
+| `ssh://server.com:22` | Url | `ssh://server.com:22` | **New in v2.0** |
 | `www.evil.com/path` | Url (no scheme) | `www.evil.com/path` | **As-is** (no auto-fix) |
 | `evil.com/path` | Url (no scheme) | `evil.com/path` | **As-is** (no auto-fix) |
 | `www.evil.com` | Url (no scheme) | `www.evil.com` | **As-is** (no auto-fix) |
+| `evil.com:443` | Url (no scheme) | `evil.com:443` | **New in v2.0** (port support) |
+| `example.com:8080/path` | Url (no scheme) | `example.com:8080/path` | **New in v2.0** |
+| `192.168.1.1:8080` | Url (no scheme) | `192.168.1.1:8080` | **New in v2.0** |
 | `evil.com` | DomainName | `evil.com` | As-is |
 
-> **Important Change in v2.0**: URLs without scheme are **NOT** auto-fixed with `https://`. They are exported as-is. Microsoft Defender handles URL normalization internally based on threat intelligence.
+> **Important Change in v2.0**:
+> - URLs without scheme are **NOT** auto-fixed with `https://`. They are exported as-is. Microsoft Defender handles URL normalization internally based on threat intelligence.
+> - **New URL schemes supported**: ftp://, ssh://, smtp://, sftp:// (previously only http:// and https://)
+> - **Port handling**: Domains and IPs with ports are now properly detected as UrlNoScheme (e.g., `evil.com:443`, `192.168.1.1:8080`)
 
 ---
 

@@ -148,12 +148,13 @@ class TestIoCUnmasker:
     def test_reversed_with_path(self, unmasker: IoCUnmasker) -> None:
         """Test reversed URL with path."""
         # Input is "https://evil.com" reversed
-        reversed_url = "moc.//:sptth"
+        reversed_url = "moc.live//:sptth"
         report = unmasker.unmask(reversed_url)
 
         assert report.was_unmasked
         # Should detect as reversed
         assert report.best_result.technique == UnmaskTechnique.REVERSED
+        assert report.best_result.unmasked == "https://evil.com"
 
     # ==========================================================================
     # Defanged URL Tests

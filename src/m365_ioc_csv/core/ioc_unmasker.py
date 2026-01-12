@@ -148,7 +148,11 @@ class IoCUnmasker:
     URL_ENCODED_RE = re.compile(r'%[0-9A-Fa-f]{2}')
     UNICODE_ESCAPE_RE = re.compile(r'\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2}')
     DEFANGED_RE = re.compile(r'\[(?:\.|/)\]|\((?:\.|/)\)|hxxps?|hxttp|://\s*\[|\[.*?\]\.', re.IGNORECASE)
-    REVERSED_DOMAIN_RE = re.compile(r'^(moc|gro|ten|ude|oc|ed|og|bu)[a-z0-9-]*(\.[a-z0-9-]+)*\.[a-z]{2,}', re.IGNORECASE)
+    REVERSED_DOMAIN_RE = re.compile(
+        r'^(moc|gro|ten|ude|oc|ed|og|bu)[a-z0-9-]*(\.[a-z0-9-]+)*'
+        r'(?:\.[a-z]{2,}|//[a-z0-9-:/._?=&%]*)',
+        re.IGNORECASE
+    )
 
     # Patterns that suggest valid IoCs
     DOMAIN_PATTERN = re.compile(
@@ -369,21 +373,36 @@ class IoCUnmasker:
         return None
 
     def _try_reversed(self, value: str, confidence: float) -> Optional[UnmaskResult]:
-        """Try string reversal."""
+        """
+        Try string reversal.
+
+        This technique detects strings that appear to be reversed.
+        A string is considered potentially reversed if:
+        1. It starts with a reversed TLD (moc, gro, ten, etc.)
+        2. When reversed, it becomes a valid IoC
+
+        Examples:
+            - "moc.evil.com" -> "com.evil.moc" (not valid)
+            - "moc.evil//:sptth" -> "https://live.com" (valid!)
+        """
+        # Step 1: Check if original value looks like it might be reversed
+        # (starts with reversed TLD pattern)
+        if not self.REVERSED_DOMAIN_RE.search(value):
+            # Doesn't look like a reversed IoC, skip this technique
+            return None
+
+        # Step 2: Reverse the string
         reversed_str = value[::-1]
 
-        # Check if reversed looks like a domain (e.g., moc.evil.com)
-        # OR if it looks like a URL with protocol (e.g., https://evil.com)
-        if self.REVERSED_DOMAIN_RE.fullmatch(reversed_str) or self.URL_PATTERN.fullmatch(reversed_str):
-            decoded = reversed_str
-            if self._looks_like_ioc(decoded):
-                # Lower confidence for reversal (could be false positive)
-                return UnmaskResult(
-                    original=value,
-                    unmasked=decoded,
-                    technique=UnmaskTechnique.REVERSED,
-                    confidence=confidence * 0.7  # Lower confidence
-                )
+        # Step 3: Check if the reversed result looks like a valid IoC
+        if self._looks_like_ioc(reversed_str):
+            # Valid reversal detected
+            return UnmaskResult(
+                original=value,
+                unmasked=reversed_str,
+                technique=UnmaskTechnique.REVERSED,
+                confidence=confidence * 0.7  # Lower confidence for reversal
+            )
 
         return None
 
