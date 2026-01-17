@@ -40,6 +40,7 @@ output/*
 input/*
 !input/.gitkeep
 !input/sample*.csv
+!input/sample*.xlsx
 !input/test_*.csv
 
 # Logs (keep directory but ignore contents)
@@ -79,3 +80,6 @@ check_python_version.py
 *.temp
 *.bak
 *~
+
+# Claude Code
+.claude/

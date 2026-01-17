@@ -17,6 +17,7 @@ from m365_ioc_csv.core.config import get_app_config
 from m365_ioc_csv.utils.error_handler import ErrorHandler, ExitCode
 from m365_ioc_csv.utils.logger import get_logger
 from m365_ioc_csv.tui.screens.main_screen import MainScreen
+from m365_ioc_csv.tui.screens.sheet_selection_screen import SheetSelectionScreen
 from m365_ioc_csv.tui.styles import APP_STYLES
 
 logger = get_logger(__name__)
@@ -50,6 +51,7 @@ class IOCApp(App):
     # Register screens as class attribute
     SCREENS = {
         "main": MainScreen,
+        "sheet_selection": SheetSelectionScreen,
     }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

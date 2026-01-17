@@ -230,8 +230,10 @@ class CSVParser:
                         logger.debug(f"Line {line_num}: Empty line, skipping")
                         continue
 
-                    # Skip comments
-                    if raw_line.strip().startswith("#"):
+                    # Skip comments (matching IoCDetector and ExcelParser patterns)
+                    comment_patterns = ("#", "//", ";", "--")
+                    stripped_line = raw_line.strip()
+                    if any(stripped_line.startswith(pattern) for pattern in comment_patterns):
                         result.skipped_rows += 1
                         logger.debug(f"Line {line_num}: Comment, skipping")
                         continue
@@ -268,7 +270,8 @@ class CSVParser:
                                (cleaned.startswith("'") and cleaned.endswith("'")):
                                 cleaned = cleaned[1:-1].strip()
 
-                            if cleaned:
+                            # Filter non-IoC values (N/A, NULL, single chars, etc.)
+                            if cleaned and not self._should_skip_value(cleaned):
                                 result.ioc_values.append(cleaned)
 
             logger.info(
@@ -594,6 +597,46 @@ class CSVParser:
             "header_values": result.header_row.values if result.header_row else None,
             "sample_values": result.ioc_values[:5] if result.ioc_values else [],
         }
+
+    @staticmethod
+    def _should_skip_value(value: str) -> bool:
+        """
+        Check if a value should be skipped during parsing.
+
+        Filters out:
+        - Empty/whitespace-only values
+        - Single-character values (unlikely to be valid IoCs)
+        - Common non-IoC placeholders (N/A, NULL, unknown, dashes, etc.)
+
+        This matches the filtering behavior of ExcelParser and IoCDetector.
+
+        Args:
+            value: The value to check
+
+        Returns:
+            True if the value should be skipped
+        """
+        # Check for empty/whitespace
+        if not value or not value.strip():
+            return True
+
+        cleaned = value.strip()
+
+        # Skip single-character values (unlikely to be valid IoCs)
+        if len(cleaned) <= 1:
+            return True
+
+        # Common non-IoC patterns to filter out
+        non_ioc_patterns = (
+            "N/A", "NA", "n/a", "na", "NULL", "null", "NONE", "none",
+            "UNKNOWN", "unknown", "NOT APPLICABLE", "not applicable",
+            "-", "—", "–",  # Various dash characters
+        )
+
+        if cleaned.upper() in [p.upper() for p in non_ioc_patterns]:
+            return True
+
+        return False
 
     @staticmethod
     def is_csv_file(file_path: Path) -> bool:

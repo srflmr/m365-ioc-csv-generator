@@ -97,6 +97,7 @@ class ProcessingScreen(Screen):
         input_file: Path,
         settings: Settings,
         skip_header: str | bool = "auto",
+        excel_sheets: Optional[list[str]] = None,
         *args: Any,
         **kwargs: Any
     ) -> None:
@@ -104,15 +105,18 @@ class ProcessingScreen(Screen):
         Initialize processing screen.
 
         Args:
-            input_file: Path to input CSV file
+            input_file: Path to input CSV/Excel file
             settings: Application settings
             skip_header: Whether to skip header row (True/False/"auto")
+            excel_sheets: Optional list of sheet names for Excel files
         """
         super().__init__(*args, **kwargs)
         self.input_file = input_file
         self.settings = settings
         self.skip_header = skip_header
+        self.excel_sheets = excel_sheets
         self.parser = CSVParser()
+        self.excel_parser = ExcelParser()
         self.unmasker = IoCUnmasker()
         self.detector = IoCDetector()
         self.writer = CSVWriter(settings)
@@ -149,16 +153,47 @@ class ProcessingScreen(Screen):
     async def _start_processing(self) -> None:
         """Start the processing workflow."""
         try:
-            # Stage 1: Parse CSV
-            await self._update_progress(10, "Parsing CSV file...")
-            parse_result = await asyncio.to_thread(
-                self.parser.parse,
-                self.input_file,
-                skip_header=self.skip_header
-            )
+            # Stage 1: Parse CSV or Excel
+            await self._update_progress(10, "Parsing file...")
 
-            await self._update_result_row("CSV Parsing", "Complete",
-                                         f"{parse_result.total_rows} rows, {len(parse_result.ioc_values)} values")
+            if self.excel_sheets:
+                # Excel file - parse selected sheets
+                excel_result = await asyncio.to_thread(
+                    self.excel_parser.parse_sheets,
+                    self.input_file,
+                    self.excel_sheets,
+                    skip_header=self.skip_header
+                )
+
+                # Combine values from all sheets
+                all_values = []
+                for sheet_name, values in excel_result.sheet_results.items():
+                    all_values.extend(values)
+
+                await self._update_result_row(
+                    "Excel Parsing",
+                    "Complete",
+                    f"{len(self.excel_sheets)} sheet(s), {excel_result.total_rows} total rows"
+                )
+
+                # Create parse_result-like object for compatibility
+                class ParseResultCompat:
+                    def __init__(self, values: list[str]):
+                        self.ioc_values = values
+                        self.total_rows = len(values)
+
+                parse_result = ParseResultCompat(all_values)
+
+            else:
+                # CSV file - existing logic
+                parse_result = await asyncio.to_thread(
+                    self.parser.parse,
+                    self.input_file,
+                    skip_header=self.skip_header
+                )
+
+                await self._update_result_row("CSV Parsing", "Complete",
+                                             f"{parse_result.total_rows} rows, {len(parse_result.ioc_values)} values")
 
             # Stage 2: Unmask obfuscated IoCs
             await self._update_progress(25, "Unmasking obfuscated IoCs...")

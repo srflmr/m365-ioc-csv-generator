@@ -401,8 +401,29 @@ class MainScreen(Screen):
                     severity="error"
                 )
                 return
-            # TODO: Show sheet selection dialog (Phase 3)
-            self.notify("Excel multi-sheet support coming soon!", severity="information")
+
+            # Parse Excel file to get sheet info
+            try:
+                excel_parser = ExcelParser()
+                sheets = excel_parser.get_sheets(path)
+
+                if not sheets:
+                    self.notify("No sheets found in Excel file", severity="error")
+                    return
+
+                # Push sheet selection screen
+                from m365_ioc_csv.tui.screens.sheet_selection_screen import SheetSelectionScreen
+                sheet_screen = SheetSelectionScreen(
+                    excel_file=path,
+                    sheets=sheets,
+                    settings=self.settings,
+                    skip_header=self.skip_header
+                )
+                self.app.push_screen(sheet_screen)
+
+            except Exception as e:
+                logger.error(f"Error loading Excel file: {e}")
+                self.notify(f"Error loading Excel file: {e}", severity="error")
             return
 
         # CSV-like files

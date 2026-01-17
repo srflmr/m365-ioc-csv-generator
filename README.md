@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
-[![Version](https://img.shields.io/badge/Version-2.0.0-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue.svg)]()
 
 Interactive TUI tool to generate Microsoft 365 Defender bulk import CSV files from Indicators of Compromise (IoCs).
 
@@ -19,16 +19,6 @@ Interactive TUI tool to generate Microsoft 365 Defender bulk import CSV files fr
 - **Timestamped Output** - Creates timestamped subdirectories for organized exports
 - **Real-time Progress** - Live updates during processing
 
-### Supported IoC Types
-| Type | Format | Example |
-|------|--------|---------|
-| File SHA256 | 64 hex characters | `441a7bf4...` |
-| File SHA1 | 40 hex characters | `441a7bf4...` |
-| File MD5 | 32 hex characters | `441a7bf4...` |
-| IP Address | Dotted decimal | `192.168.1.1` |
-| Domain Name | FQDN | `evil.com` |
-| URL | Full URL with scheme | `https://evil.com/path` |
-| URL (no scheme) | With www, path, or port | `www.evil.com/path` or `evil.com:443` |
 
 ### Supported URL Schemes
 - `http://` - HTTP protocol
@@ -37,6 +27,14 @@ Interactive TUI tool to generate Microsoft 365 Defender bulk import CSV files fr
 - `ssh://` - SSH protocol
 - `smtp://` - SMTP protocol
 - `sftp://` - SFTP protocol
+
+### Supported Input Formats
+- **CSV** - Comma-separated values (auto-detects delimiter)
+- **Excel (.xlsx/.xls)** - Multi-sheet workbooks with sheet selection UI
+  - Multi-sheet support with SheetSelectionScreen
+  - Automatic non-IoC filtering (N/A, NULL, comments, empty lines)
+  - Sheet metadata display (name, row count, estimated IoC count)
+  - Select specific sheets or all sheets for processing
 
 ### IoC Unmasking Techniques
 - **Base64** - `aHR0cHM6Ly9ldmlsLmNvbQ==` → `https://evil.com`
@@ -77,8 +75,8 @@ python3 -m venv .venv
 # Linux/macOS:
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (includes openpyxl for Excel support)
+pip install -e .
 
 # Run application
 python -m m365_ioc_csv
@@ -260,6 +258,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.7.0 (improved IoC detection and filtering)
+**Current Version:** 3.0.0 (Excel multi-sheet support + enhanced non-IoC filtering)
 
 For detailed version history and changes, see [CHANGELOG.md](CHANGELOG.md)

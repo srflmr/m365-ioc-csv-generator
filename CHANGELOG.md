@@ -10,31 +10,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] - 2025-01-18
 
 ### Added
-- **excel_parser.py**: Added Excel file parsing module with multi-sheet support
-  - Sheet enumeration with metadata (name, index, row count, IoC count)
-  - Parse specific sheets or all sheets from workbook
-  - Data-only mode for faster reading
-  - Graceful degradation if openpyxl not installed
-- **csv_parser.py**: Updated is_csv_file() to include .xlsx/.xls extensions
-- **main_screen.py**: Added Excel file type detection and routing
-  - Detects .xlsx and .xls files
-  - Checks for openpyxl availability
-  - Shows user-friendly error if openpyxl not installed
-- **processing_screen.py**: Added excel_parser import for multi-sheet parsing
+- **Excel Multi-Sheet Support** - Full support for .xlsx/.xls files with multiple sheets
+  - `excel_parser.py`: Core Excel parsing module with openpyxl
+    - `ExcelSheetInfo` - Sheet metadata (name, index, row_count, estimated_ioc_count)
+    - `ExcelParseResult` - Parse results with per-sheet statistics
+    - `ExcelParser.get_sheets()` - Get sheet metadata without loading full data
+    - `ExcelParser.parse_sheets()` - Parse specific sheets only
+    - `ExcelParser.parse_all_sheets()` - Parse all sheets in workbook
+    - Enhanced non-IoC filtering (comments, empty lines, N/A, NULL, single chars)
+  - `sheet_selection_screen.py`: Sheet selection UI for Excel multi-sheet support
+    - DataTable display with sheet metadata (name, rows, IoC count)
+    - Multi-selection via checkboxes with SPACE key toggle
+    - Select All / Deselect All buttons
+    - Process Selected and Back buttons
+    - Keyboard shortcuts: SPACE to toggle, ENTER to process, ESC to go back
+    - Real-time selected count display
+- **app.py**: Registered SheetSelectionScreen in SCREENS dict
+- **main_screen.py**: Excel file routing to SheetSelectionScreen
+  - Parses Excel file to get sheet info using ExcelParser.get_sheets()
+  - Passes sheets, settings, and skip_header to SheetSelectionScreen
+  - Error handling for empty workbooks
+  - openpyxl availability check before processing Excel files
+- **processing_screen.py**: ExcelParseResult handling in _start_processing()
+  - Added excel_sheets parameter to __init__()
+  - Added excel_parser instance initialization
+  - Conditional CSV/Excel parsing logic
+  - Combines values from multiple sheets into single list
+  - Creates ParseResultCompat for unified processing workflow
+- **core/__init__.py**: Added excel_parser to module exports
+- **screens/__init__.py**: Updated exports to include sheet_selection_screen
+- **csv_parser.py**: Enhanced non-IoC filtering to match ExcelParser
+  - Added support for multiple comment markers (#, //, ;, --)
+  - Added `_should_skip_value()` static method
+  - Filters N/A, NULL, unknown, single characters, empty values
+- **pyproject.toml**: openpyxl moved to main dependencies (auto-installed with `pip install -e .`)
+- **Sample Input Files**:
+  - `input/sample_mixed_data.csv` - CSV with comments and noise
+  - `input/sample_network_iocs.csv` - Network IoCs with comments
+  - `input/sample_ioc_collection.xlsx` - Multi-sheet Excel (4 sheets)
+  - `input/sample_simple_list.xlsx` - Simple list Excel
 
 ### Changed
 - Updated version from 2.7.0 to 3.0.0 (feature addition)
-- Updated supported file types in MainScreen
+- ProcessingScreen now handles both CSV and Excel file types
+- MainScreen routes Excel files to sheet selection instead of showing placeholder
+- CSVParser comment filtering enhanced from `#` only to all patterns (#, //, ;, --)
+- Both CSVParser and ExcelParser now use identical non-IoC filtering logic
 
 ### Status
-- Excel files are now detected and accepted
-- Shows error message if openpyxl is not installed
-- Ready for next phase: SheetSelectionScreen implementation
+- Excel multi-sheet selection fully implemented
+- Users can select specific sheets or all sheets
+- ProcessingScreen handles both CSV and Excel inputs seamlessly
+- Sheet values are combined before IoC detection
+- openpyxl is now a main dependency (auto-installed)
 
 ### Note
-- Excel parsing infrastructure is in place
-- openpyxl is an optional dependency: `pip install openpyxl`
-- Multi-sheet selection UI will be added in next phase
+- Backward compatibility maintained - CSV processing path unchanged
 
 ## [2.7.0] - 2025-01-18
 

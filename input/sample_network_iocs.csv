@@ -1,0 +1,30 @@
+# Network Traffic Indicators - Daily Threat Feed
+# Source: SOC Team
+# Date: 2025-01-18
+
+# IP Addresses - Suspicious Network Activity
+192.168.1.100
+10.0.0.50
+172.16.0.25
+203.0.113.45
+198.51.100.2
+
+# Domain Names - C2 Servers
+evil-c2.example.com
+malware-dl.suspicious.net
+phishing-attack.fake-site.org
+data-exfiltration.cloud
+
+# URLs - Malicious Downloads
+https://evil-c2.example.com/payload.exe
+http://malware-dl.suspicious.net/trojan.zip
+https://phishing-attack.fake-site.org/login.php
+
+# File Hashes - Malware Samples
+5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+d41d8cd98f00b204e9800998ecf8427e
+
+# Additional IPs from recent alerts
+45.33.32.156
+103.21.244.12
