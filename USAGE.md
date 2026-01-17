@@ -84,16 +84,16 @@ If auto-setup doesn't work:
 
 #### Step 2: Create Virtual Environment
 ```bash
-python3 -m venv venv
+python3 -m venv .venv
 ```
 
 #### Step 3: Activate Virtual Environment
 ```bash
 # Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 #### Step 4: Install Dependencies

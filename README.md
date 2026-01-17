@@ -69,13 +69,13 @@ chmod +x start.sh
 #### Option 2: Manual Installation
 ```bash
 # Create virtual environment
-python3 -m venv venv
+python3 -m venv .venv
 
 # Activate virtual environment
 # Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 # Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -188,6 +188,7 @@ Domains and IPs with ports are now properly detected:
 
 ```
 m365-ioc-csv/
+├── .venv/               # Virtual environment (auto-created)
 ├── src/m365_ioc_csv/
 │   ├── core/              # Core logic modules
 │   │   ├── ioc_detector.py      # IoC type detection

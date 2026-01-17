@@ -6,7 +6,7 @@ REM ============================================================================
 
 SETLOCAL EnableDelayedExpansion
 SET "APP_NAME=M365 IOC CSV Generator"
-SET "VENV_DIR=venv"
+SET "VENV_DIR=.venv"
 SET "PYTHON_CMD=python"
 SET "LOG_FILE=setup.log"
 SET "REQUIREMENTS_INSTALLED=.requirements_installed"

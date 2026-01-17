@@ -5,7 +5,7 @@
 # ==============================================================================
 
 APP_NAME="M365 IOC CSV Generator"
-VENV_DIR="venv"
+VENV_DIR=".venv"
 PYTHON_CMD=""
 LOG_FILE="setup.log"
 REQUIREMENTS_INSTALLED=".requirements_installed"
