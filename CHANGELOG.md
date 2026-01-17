@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-01-18
+
+### Added
+- **excel_parser.py**: Added Excel file parsing module with multi-sheet support
+  - Sheet enumeration with metadata (name, index, row count, IoC count)
+  - Parse specific sheets or all sheets from workbook
+  - Data-only mode for faster reading
+  - Graceful degradation if openpyxl not installed
+- **csv_parser.py**: Updated is_csv_file() to include .xlsx/.xls extensions
+- **main_screen.py**: Added Excel file type detection and routing
+  - Detects .xlsx and .xls files
+  - Checks for openpyxl availability
+  - Shows user-friendly error if openpyxl not installed
+- **processing_screen.py**: Added excel_parser import for multi-sheet parsing
+
+### Changed
+- Updated version from 2.7.0 to 3.0.0 (feature addition)
+- Updated supported file types in MainScreen
+
+### Status
+- Excel files are now detected and accepted
+- Shows error message if openpyxl is not installed
+- Ready for next phase: SheetSelectionScreen implementation
+
+### Note
+- Excel parsing infrastructure is in place
+- openpyxl is an optional dependency: `pip install openpyxl`
+- Multi-sheet selection UI will be added in next phase
+
 ## [2.7.0] - 2025-01-18
 
 ### Added
