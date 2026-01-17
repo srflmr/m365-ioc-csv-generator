@@ -241,6 +241,12 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **Enhanced URL detection** - Added support for ftp://, ssh://, smtp://, sftp:// schemes
 - **Enhanced port handling** - Domains/IPs with ports now properly detected as UrlNoScheme
 - **Fixed reversed URL detection** - Pattern now correctly detects reversed URLs with protocols
+- **Fixed Python detection in launcher scripts** - Improved cross-platform compatibility:
+  - start.bat: Now tries multiple Python commands (python, python3, py)
+  - start.sh: Added Windows-aware detection (python.exe, py)
+  - Removed external file dependency (check_python_version.py)
+  - Consolidated version validation into single step
+  - Scripts now use detected Python command consistently throughout
 
 #### v1.0.0
 - Initial release

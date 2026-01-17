@@ -19,8 +19,8 @@ NC='\033[0m' # No Color
 
 # Function to find Python command
 find_python_cmd() {
-    # Try python3 first, then python
-    for cmd in python3 python; do
+    # Try python3, python, py (Windows launcher), python.exe (Git Bash)
+    for cmd in python3 python py python.exe; do
         if command -v "$cmd" &> /dev/null; then
             # Check if version is 3.10+
             if $cmd -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" 2>/dev/null; then
@@ -51,8 +51,8 @@ echo "  Auto-Setup Launcher v2.0"
 echo "==============================================================================="
 echo ""
 
-# Check Python installation
-echo -e "${YELLOW}[1/6] Checking Python installation...${NC}"
+# Check Python installation and version in one step
+echo -e "${YELLOW}[1/5] Checking Python installation (requires 3.10+)...${NC}"
 PYTHON_CMD=$(find_python_cmd)
 if [ -z "$PYTHON_CMD" ]; then
     echo -e "${RED}[ERROR] Python 3.10+ is not installed${NC}"
@@ -61,28 +61,18 @@ if [ -z "$PYTHON_CMD" ]; then
     echo "  - Ubuntu/Debian: sudo apt install python3 python3-venv"
     echo "  - Fedora/RHEL:   sudo dnf install python3 python3-venv"
     echo "  - macOS:         brew install python3"
+    echo "  - Windows:       https://www.python.org/downloads/"
     echo ""
     exit 1
 fi
 
 PYTHON_VERSION=$($PYTHON_CMD --version)
 echo -e "${GREEN}[OK] Found $PYTHON_VERSION${NC}"
-echo ""
-
-# Check Python version (minimum 3.10)
-echo -e "${YELLOW}[2/6] Validating Python version...${NC}"
-if ! $PYTHON_CMD -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" 2>/dev/null; then
-    echo -e "${RED}[ERROR] Python 3.10 or higher is required${NC}"
-    $PYTHON_CMD --version
-    echo ""
-    echo "Please install a newer version of Python"
-    exit 1
-fi
 echo -e "${GREEN}[OK] Python version is compatible${NC}"
 echo ""
 
 # Create virtual environment
-echo -e "${YELLOW}[3/6] Setting up virtual environment...${NC}"
+echo -e "${YELLOW}[2/5] Setting up virtual environment...${NC}"
 if [ ! -d "$VENV_DIR" ]; then
     echo "  Creating virtual environment..."
     $PYTHON_CMD -m venv "$VENV_DIR" >> "$LOG_FILE" 2>&1
@@ -121,14 +111,14 @@ fi
 echo ""
 
 # Activate virtual environment
-echo -e "${YELLOW}[4/6] Activating virtual environment...${NC}"
+echo -e "${YELLOW}[3/5] Activating virtual environment...${NC}"
 source "$VENV_DIR/bin/activate"
 handle_error $? "Virtual environment activation"
 echo -e "${GREEN}[OK] Virtual environment activated${NC}"
 echo ""
 
 # Install dependencies
-echo -e "${YELLOW}[5/6] Installing dependencies...${NC}"
+echo -e "${YELLOW}[4/5] Installing dependencies...${NC}"
 if [ ! -f "$REQUIREMENTS_INSTALLED" ]; then
     echo "  Installing packages (this may take a minute)..."
     pip install -e . >> "$LOG_FILE" 2>&1
@@ -141,7 +131,7 @@ fi
 echo ""
 
 # Create default directories
-echo -e "${YELLOW}[6/6] Creating default directories...${NC}"
+echo -e "${YELLOW}[5/5] Creating default directories...${NC}"
 mkdir -p input output logs 2>> "$LOG_FILE"
 echo -e "${GREEN}[OK] Directories ready${NC}"
 echo ""
@@ -155,7 +145,7 @@ echo -e "${BLUE}Press Ctrl+C to exit the application${NC}"
 echo ""
 
 # Run the app and capture exit code
-python -m m365_ioc_csv
+$PYTHON_CMD -m m365_ioc_csv
 APP_EXIT_CODE=$?
 
 # Handle exit code

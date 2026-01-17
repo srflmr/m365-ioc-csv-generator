@@ -19,28 +19,35 @@ echo   Auto-Setup Launcher v2.0
 echo ===============================================================================
 echo.
 
-REM Check Python installation
-echo [1/6] Checking Python installation...
-%PYTHON_CMD% --version >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo   [ERROR] Python is not installed or not in PATH
-    echo.
-    echo   Please install Python 3.10+ from: https://www.python.org/downloads/
-    echo   Make sure to check "Add Python to PATH" during installation
-    echo.
-    pause
-    exit /b 1
+REM Check Python installation and version in one step
+echo [1/5] Checking Python installation (requires 3.10+)...
+
+REM Try multiple Python commands on Windows
+for %%P in (python python3 py) do (
+    %%P --version >nul 2>&1
+    if !ERRORLEVEL! equ 0 (
+        set "PYTHON_CMD=%%P"
+        goto :python_found
+    )
 )
+
+echo   [ERROR] Python 3.10+ is not installed or not in PATH
+echo.
+echo   Please install Python 3.10+ from: https://www.python.org/downloads/
+echo   Make sure to check "Add Python to PATH" during installation
+echo.
+pause
+exit /b 1
+
+:python_found
 for /f "tokens=*" %%i in ('%PYTHON_CMD% --version') do set PYTHON_VERSION=%%i
 echo   [OK] Found %PYTHON_VERSION%
-echo.
 
-REM Check Python version (minimum 3.10)
-echo [2/6] Validating Python version...
-%PYTHON_CMD% check_python_version.py
+REM Validate version using inline check
+%PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo   [ERROR] Python 3.10 or higher is required
-    %PYTHON_CMD% --version
+    echo   Found: %PYTHON_VERSION%
     echo.
     echo   Please install a newer version of Python
     pause
@@ -50,7 +57,7 @@ echo   [OK] Python version is compatible
 echo.
 
 REM Create virtual environment
-echo [3/6] Setting up virtual environment...
+echo [2/5] Setting up virtual environment...
 if not exist "%VENV_DIR%" (
     echo   Creating virtual environment...
     %PYTHON_CMD% -m venv "%VENV_DIR%" >> "%LOG_FILE%" 2>&1
@@ -82,7 +89,7 @@ if not exist "%VENV_DIR%" (
 echo.
 
 REM Activate virtual environment
-echo [4/6] Activating virtual environment...
+echo [3/5] Activating virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
 if %ERRORLEVEL% neq 0 (
     echo   [ERROR] Failed to activate virtual environment
@@ -93,7 +100,7 @@ echo   [OK] Virtual environment activated
 echo.
 
 REM Install dependencies
-echo [5/6] Installing dependencies...
+echo [4/5] Installing dependencies...
 if not exist "%REQUIREMENTS_INSTALLED%" (
     echo   Installing packages (this may take a minute)...
     pip install -e . >> "%LOG_FILE%" 2>&1
@@ -111,7 +118,7 @@ if not exist "%REQUIREMENTS_INSTALLED%" (
 echo.
 
 REM Create default directories
-echo [6/6] Creating default directories...
+echo [5/5] Creating default directories...
 if not exist "input" mkdir input
 if not exist "output" mkdir output
 if not exist "logs" mkdir logs
@@ -126,7 +133,7 @@ echo.
 echo   Press Ctrl+C to exit the application
 echo.
 
-python -m m365_ioc_csv
+%PYTHON_CMD% -m m365_ioc_csv
 
 REM Handle exit code
 if %ERRORLEVEL% neq 0 (

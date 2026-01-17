@@ -620,8 +620,14 @@ hash,68747470733a2f2f6576696c2e636f6d
 
 **Solution**:
 - **Windows**: Install from [python.org](https://www.python.org/downloads/) - Check "Add Python to PATH"
-- **Linux**: `sudo apt install python3`
+- **Linux**: `sudo apt install python3 python3-venv`
+- **Fedora/RHEL**: `sudo dnf install python3 python3-venv`
 - **macOS**: `brew install python3`
+
+**Note**: The launcher scripts (start.bat/start.sh) automatically detect Python using multiple commands:
+- Tries: `python`, `python3`, `py` (Windows launcher), `python.exe` (Git Bash)
+- Validates version is 3.10 or higher
+- Uses the detected command throughout the entire process
 
 ### "No file selected"
 
