@@ -385,17 +385,39 @@ class MainScreen(Screen):
         path = event.path
         logger.info(f"File selected: {path}")
 
-        # Only accept CSV-like files
-        if path.suffix.lower() not in (".csv", ".tsv", ".txt", ".log"):
-            self.notify(f"Invalid file type: {path.suffix}", severity="error")
-            return
-
         # Check if it's a directory
         if path.is_dir():
             return
 
+        # Check file type and route accordingly
+        if path.suffix.lower() in (".xlsx", ".xls"):
+            # Excel file - check if openpyxl is available
+            if not self._check_openpyxl_available():
+                self.notify(
+                    "Excel files require openpyxl package. "
+                    "Install with: pip install openpyxl",
+                    severity="error"
+                )
+                return
+            # TODO: Show sheet selection dialog (Phase 3)
+            self.notify("Excel multi-sheet support coming soon!", severity="information")
+            return
+
+        # CSV-like files
+        if path.suffix.lower() not in (".csv", ".tsv", ".txt", ".log"):
+            self.notify(f"Invalid file type: {path.suffix}", severity="error")
+            return
+
         self.selected_file = path
         self._analyze_file()
+
+    def _check_openpyxl_available(self) -> bool:
+        """Check if openpyxl package is available."""
+        try:
+            import openpyxl
+            return True
+        except ImportError:
+            return False
 
     @on(Select.Changed, "#header-select")
     def on_header_select_changed(self, event: Select.Changed) -> None:

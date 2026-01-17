@@ -1,6 +1,6 @@
 [project]
 name = "m365-ioc-csv"
-version = "2.7.0"
+version = "3.0.0"
 description = "Interactive CLI tool to generate Microsoft 365 Defender bulk import CSV files from a list of Indicators of Compromise (IoCs)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,6 +34,9 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "mypy>=1.0.0",
     "ruff>=0.5.0",
+]
+excel = [
+    "openpyxl>=3.1.0",
 ]
 
 [project.scripts]
