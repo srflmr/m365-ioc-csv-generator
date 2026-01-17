@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2025-01-18
+
+### Added
+- **ioc_detector.py**: Comprehensive non-IoC filtering
+  - Filter comments (#, //, ;, --)
+  - Filter empty strings and whitespace-only values
+  - Filter single-character values
+  - New method `detect_batch_with_unknown()` to get both valid IoCs and unknown values
+  - Better logging for unknown values with length info
+
+### Fixed
+- **ioc_detector.py**: Proper handling of URL_NO_SCHEME in detect_batch()
+  - Now correctly converts URL_NO_SCHEME to URL type
+  - Ensures proper export format
+
+### Changed
+- Enhanced detect_batch() to log unknown values count
+- Improved debug logging for better troubleshooting
+
 ## [2.6.0] - 2025-01-18
 
 ### Fixed

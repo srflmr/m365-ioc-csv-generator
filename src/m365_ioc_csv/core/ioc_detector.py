@@ -91,6 +91,7 @@ class IoCDetector:
     - URL detection with/without scheme
     - Strict domain validation
     - IPv4 address validation
+    - Filtering of comments, empty strings, and invalid values
 
     Example:
         detector = IoCDetector()
@@ -119,9 +120,61 @@ class IoCDetector:
     # Note: All schemes are treated as URLs for Microsoft Defender export
     URL_SCHEMES = ("http://", "https://", "ftp://", "ssh://", "smtp://", "sftp://")
 
+    # Patterns for non-IoC values (comments, etc.)
+    COMMENT_PATTERNS = (
+        "#",               # Python/shell style comments
+        "//",             # C++/JavaScript style comments
+        ";",              # Ini file/comments
+        "--",             # SQL comments
+    )
+
     def __init__(self) -> None:
         """Initialize the IoC detector."""
         logger.debug("IoCDetector initialized")
+
+    def _is_comment(self, value: str) -> bool:
+        """
+        Check if value is a comment line.
+
+        Args:
+            value: String to check
+
+        Returns:
+            True if value appears to be a comment
+        """
+        stripped = value.strip()
+        if not stripped:
+            return True
+
+        # Check if starts with comment markers
+        for marker in self.COMMENT_PATTERNS:
+            if stripped.startswith(marker):
+                return True
+
+        return False
+
+    def _is_empty_or_invalid(self, value: str) -> bool:
+        """
+        Check if value is empty or should be skipped.
+
+        Args:
+            value: String to check
+
+        Returns:
+            True if value should be skipped
+        """
+        if not value:
+            return True
+
+        stripped = value.strip()
+        if not stripped:
+            return True
+
+        # Skip single-character values (unlikely to be valid IoCs)
+        if len(stripped) <= 1:
+            return True
+
+        return False
 
     def detect(self, value: str) -> IoCMatch:
         """
@@ -138,8 +191,15 @@ class IoCDetector:
             match = detector.detect("https://evil.com")
             # match.type == IoCType.URL
         """
-        if not value:
-            return IoCMatch(value="", type=IoCType.UNKNOWN, is_valid=False)
+        # Check for empty or invalid values first
+        if self._is_empty_or_invalid(value):
+            logger.debug(f"Skipping empty/invalid value: '{value[:50]}'")
+            return IoCMatch(value=value or "", type=IoCType.UNKNOWN, is_valid=False)
+
+        # Check for comments
+        if self._is_comment(value):
+            logger.debug(f"Skipping comment: '{value[:50]}'")
+            return IoCMatch(value=value, type=IoCType.UNKNOWN, is_valid=False)
 
         cleaned = value.strip()
 
@@ -181,8 +241,8 @@ class IoCDetector:
             logger.debug(f"Detected domain name: {cleaned}")
             return IoCMatch(value=cleaned, type=IoCType.DOMAIN_NAME)
 
-        # Unknown type
-        logger.debug(f"Unknown IoC type: {cleaned[:50]}...")
+        # Unknown type - log for debugging
+        logger.debug(f"Unknown IoC type: '{cleaned[:50]}...' (len={len(cleaned)})")
         return IoCMatch(value=cleaned, type=IoCType.UNKNOWN, is_valid=False)
 
     def detect_type(self, value: str) -> Optional[str]:
@@ -216,18 +276,75 @@ class IoCDetector:
             # results[IoCType.IP_ADDRESS] == ["192.168.1.1"]
             # results[IoCType.DOMAIN_NAME] == ["evil.com"]
         """
-        # FIX: Initialize empty dict instead of broken dict comprehension
+        # Initialize empty dict
         grouped: dict[IoCType, list[str]] = {}
+        unknown_values: list[str] = []
 
         for value in values:
             match = self.detect(value)
-            if match.is_valid and match.type != IoCType.UNKNOWN:
-                if match.type not in grouped:
-                    grouped[match.type] = []
-                grouped[match.type].append(value)
 
-        logger.info(f"Detected {sum(len(v) for v in grouped.values())} IoCs from {len(values)} inputs")
+            if match.is_valid and match.type != IoCType.UNKNOWN:
+                if match.type == IoCType.URL_NO_SCHEME:
+                    # Convert to URL for export
+                    if IoCType.URL not in grouped:
+                        grouped[IoCType.URL] = []
+                    grouped[IoCType.URL].append(match.value)
+                else:
+                    if match.type not in grouped:
+                        grouped[match.type] = []
+                    grouped[match.type].append(match.value)
+            else:
+                # Track unknown values for reporting
+                if match.value:  # Only track non-empty values
+                    unknown_values.append(match.value)
+
+        valid_count = sum(len(v) for v in grouped.values())
+        logger.info(f"Detected {valid_count} valid IoCs from {len(values)} inputs ({len(unknown_values)} unknown)")
+
+        if unknown_values:
+            logger.debug(f"Unknown values: {unknown_values[:10]}...")  # Log first 10
+
         return grouped
+
+    def detect_batch_with_unknown(self, values: list[str]) -> tuple[dict[IoCType, list[str]], list[str]]:
+        """
+        Detect multiple IoC values and return both valid IoCs and unknown values.
+
+        Args:
+            values: List of IoC values to detect
+
+        Returns:
+            Tuple of (grouped IoCs dict, unknown values list)
+
+        Example:
+            detector = IoCDetector()
+            iocs, unknown = detector.detect_batch_with_unknown(["192.168.1.1", "comment", "abc123"])
+            # iocs[IoCType.IP_ADDRESS] == ["192.168.1.1"]
+            # unknown == ["comment", "abc123"]
+        """
+        grouped: dict[IoCType, list[str]] = {}
+        unknown_values: list[str] = []
+
+        for value in values:
+            match = self.detect(value)
+
+            if match.is_valid and match.type != IoCType.UNKNOWN:
+                if match.type == IoCType.URL_NO_SCHEME:
+                    if IoCType.URL not in grouped:
+                        grouped[IoCType.URL] = []
+                    grouped[IoCType.URL].append(match.value)
+                else:
+                    if match.type not in grouped:
+                        grouped[match.type] = []
+                    grouped[match.type].append(match.value)
+            else:
+                if match.value:  # Only track non-empty values
+                    unknown_values.append(match.value)
+
+        valid_count = sum(len(v) for v in grouped.values())
+        logger.info(f"Detected {valid_count} valid IoCs, {len(unknown_values)} unknown from {len(values)} inputs")
+
+        return grouped, unknown_values
 
     @staticmethod
     def _is_ipv4(value: str) -> bool:

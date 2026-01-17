@@ -260,6 +260,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.6.0 (includes critical bug fix)
+**Current Version:** 2.7.0 (improved IoC detection and filtering)
 
 For detailed version history and changes, see [CHANGELOG.md](CHANGELOG.md)
