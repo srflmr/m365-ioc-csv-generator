@@ -44,6 +44,13 @@ pause
 exit /b 1
 
 :python_found
+REM Defensive check: ensure PYTHON_CMD is set
+if not defined PYTHON_CMD (
+    echo   [ERROR] Internal error: PYTHON_CMD not set
+    pause
+    exit /b 1
+)
+
 for /f "tokens=*" %%i in ('%PYTHON_CMD% --version') do set PYTHON_VERSION=%%i
 echo   [OK] Found %PYTHON_VERSION%
 echo   [OK] Python version is compatible
@@ -51,6 +58,7 @@ echo.
 
 REM Create virtual environment
 echo [2/5] Setting up virtual environment...
+set "VENV_CREATED=0"
 if not exist "%VENV_DIR%" (
     echo   Creating virtual environment...
 
@@ -69,6 +77,9 @@ if not exist "%VENV_DIR%" (
         echo   [ERROR] Failed to create virtual environment
         echo   Log file: %CD%\%LOG_FILE%
         echo.
+        echo   Cleaning up partial virtual environment...
+        rd /s /q "%VENV_DIR%" 2>nul
+        echo.
         type "%LOG_FILE%"
         echo.
         pause
@@ -79,12 +90,16 @@ if not exist "%VENV_DIR%" (
         echo   [ERROR] Virtual environment creation failed - activate.bat not found
         echo   Log file: %CD%\%LOG_FILE%
         echo.
+        echo   Cleaning up partial virtual environment...
+        rd /s /q "%VENV_DIR%" 2>nul
+        echo.
         type "%LOG_FILE%"
         echo.
         pause
         exit /b 1
     )
     echo   [OK] Virtual environment created
+    set "VENV_CREATED=1"
     del "%REQUIREMENTS_INSTALLED%" 2>nul
 ) else (
     REM Verify existing venv is valid
@@ -108,12 +123,70 @@ if %ERRORLEVEL% neq 0 (
     pause
     exit /b 1
 )
+
+REM CRITICAL FIX: Validate venv Python works
+python --version >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo   [ERROR] Virtual environment Python is not working
+    echo.
+    echo   This can happen when:
+    echo   - System Python was upgraded after venv was created
+    echo   - Venv files are corrupted
+    echo   - Venv is incomplete
+    echo.
+    echo   Please delete the '.venv' folder and run this script again:
+    echo   rd /s /q .venv
+    echo.
+    echo   Venv location: %CD%\%VENV_DIR%
+    pause
+    exit /b 1
+)
+
+REM CRITICAL FIX: Validate venv Python version >= 3.10
+python -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    for /f "tokens=*" %%i in ('python --version') do set VENV_PYTHON_VERSION=%%i
+    echo   [ERROR] Virtual environment Python version is incompatible
+    echo   Found: %VENV_PYTHON_VERSION%
+    echo   Required: 3.10 or higher
+    echo.
+    echo   This can happen when:
+    echo   - Venv was created with older Python version
+    echo   - System Python was upgraded
+    echo.
+    echo   Please delete the '.venv' folder and run this script again:
+    echo   rd /s /q .venv
+    echo.
+    echo   Venv location: %CD%\%VENV_DIR%
+    pause
+    exit /b 1
+)
+
 echo   [OK] Virtual environment activated
+echo   [OK] Virtual environment Python is working
 echo.
 
 REM Install dependencies
 echo [4/5] Installing dependencies...
+
+REM CRITICAL FIX: Check if pyproject.toml is newer than .requirements_installed
+set "INSTALL_DEPENDENCIES=0"
 if not exist "%REQUIREMENTS_INSTALLED%" (
+    set "INSTALL_DEPENDENCIES=1"
+) else (
+    REM Check if pyproject.toml exists and is newer
+    if exist "pyproject.toml" (
+        for /f "tokens=*" %%A in ('pyproject.toml') do set PYPROJECT_TIME=%%~tA
+        for /f "tokens=*" %%B in ('%REQUIREMENTS_INSTALLED%') do set REQINST_TIME=%%~tB
+        REM Simple string comparison - not perfect but works for most cases
+        if "!PYPROJECT_TIME!" gtr "!REQINST_TIME!" (
+            echo   [INFO] pyproject.toml has been updated
+            set "INSTALL_DEPENDENCIES=1"
+        )
+    )
+)
+
+if !INSTALL_DEPENDENCIES! equ 1 (
     echo   Installing packages (this may take a minute)...
     pip install -e . >> "%LOG_FILE%" 2>&1
     if %ERRORLEVEL% neq 0 (
@@ -134,26 +207,43 @@ echo.
 
 REM Create default directories
 echo [5/5] Creating default directories...
-if not exist "input" mkdir input
-if %ERRORLEVEL% neq 0 (
-    echo   [ERROR] Failed to create input directory
-    echo   Please check permissions
-    pause
-    exit /b 1
+
+REM MEDIUM FIX: Handle mkdir race condition
+if not exist "input" (
+    mkdir input
+    if %ERRORLEVEL% neq 0 (
+        if exist "input" (
+            echo   [WARNING] Another process created input directory
+        ) else (
+            echo   [ERROR] Failed to create input directory
+            pause
+            exit /b 1
+        )
+    )
 )
-if not exist "output" mkdir output
-if %ERRORLEVEL% neq 0 (
-    echo   [ERROR] Failed to create output directory
-    echo   Please check permissions
-    pause
-    exit /b 1
+if not exist "output" (
+    mkdir output
+    if %ERRORLEVEL% neq 0 (
+        if exist "output" (
+            echo   [WARNING] Another process created output directory
+        ) else (
+            echo   [ERROR] Failed to create output directory
+            pause
+            exit /b 1
+        )
+    )
 )
-if not exist "logs" mkdir logs
-if %ERRORLEVEL% neq 0 (
-    echo   [ERROR] Failed to create logs directory
-    echo   Please check permissions
-    pause
-    exit /b 1
+if not exist "logs" (
+    mkdir logs
+    if %ERRORLEVEL% neq 0 (
+        if exist "logs" (
+            echo   [WARNING] Another process created logs directory
+        ) else (
+            echo   [ERROR] Failed to create logs directory
+            pause
+            exit /b 1
+        )
+    )
 )
 echo   [OK] Directories ready
 echo.

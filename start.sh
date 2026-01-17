@@ -9,7 +9,14 @@ VENV_DIR=".venv"
 PYTHON_CMD=""
 LOG_FILE="setup.log"
 REQUIREMENTS_INSTALLED=".requirements_installed"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# MEDIUM FIX: Validate SCRIPT_DIR with error handling
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
+    echo -e "\033[0;31m[ERROR] Cannot determine script directory\033[0m"
+    echo "  Script may be accessed via broken symlink"
+    echo "  Current directory: $(pwd)"
+    exit 1
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,6 +24,30 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Function to display log file safely (check for binary data)
+safe_display_log() {
+    local log_file="$1"
+    local lines="${2:-20}"
+
+    if [ ! -f "$log_file" ]; then
+        return
+    fi
+
+    # Check if file is text (not binary)
+    if file "$log_file" 2>/dev/null | grep -q "text\|ASCII\|UTF-8"; then
+        if [ "$lines" = "all" ]; then
+            cat "$log_file" | sed 's/^/  /'
+        else
+            tail -"$lines" "$log_file" | sed 's/^/  /'
+        fi
+    else
+        echo "  Log file contains binary or non-text data"
+        echo "  Use a hexdump viewer or text editor to inspect:"
+        echo "    less $log_file"
+        echo "    hexdump -C $log_file | head -20"
+    fi
+}
 
 # Function to find Python command with version validation
 find_python_cmd() {
@@ -43,7 +74,7 @@ handle_error() {
         if [ -f "$SCRIPT_DIR/$LOG_FILE" ]; then
             echo ""
             echo "  Last 20 lines of log:"
-            tail -20 "$SCRIPT_DIR/$LOG_FILE" | sed 's/^/  /'
+            safe_display_log "$SCRIPT_DIR/$LOG_FILE" 20
         fi
         exit 1
     fi
@@ -79,6 +110,7 @@ echo ""
 
 # Create virtual environment
 echo -e "${YELLOW}[2/5] Setting up virtual environment...${NC}"
+VENV_CREATED=0
 if [ ! -d "$VENV_DIR" ]; then
     echo "  Creating virtual environment..."
 
@@ -97,8 +129,11 @@ if [ ! -d "$VENV_DIR" ]; then
         echo -e "${RED}[ERROR] Failed to create virtual environment${NC}"
         echo "  Log file: $SCRIPT_DIR/$LOG_FILE"
         echo ""
+        echo "  Cleaning up partial virtual environment..."
+        rm -rf "$VENV_DIR" 2>/dev/null
+        echo ""
         echo "  Error details:"
-        cat "$LOG_FILE" | sed 's/^/  /'
+        safe_display_log "$LOG_FILE" "all"
         echo ""
         echo ""
         echo "  Possible causes:"
@@ -115,12 +150,16 @@ if [ ! -d "$VENV_DIR" ]; then
         echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
         echo "  Log file: $SCRIPT_DIR/$LOG_FILE"
         echo ""
+        echo "  Cleaning up partial virtual environment..."
+        rm -rf "$VENV_DIR" 2>/dev/null
+        echo ""
         echo "  Error details:"
-        cat "$LOG_FILE" | sed 's/^/  /'
+        safe_display_log "$LOG_FILE" "all"
         exit 1
     fi
 
     echo -e "${GREEN}[OK] Virtual environment created${NC}"
+    VENV_CREATED=1
     rm -f "$REQUIREMENTS_INSTALLED"
 else
     # Verify existing venv is valid
@@ -142,12 +181,65 @@ if [ $? -ne 0 ]; then
     echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
     exit 1
 fi
+
+# CRITICAL FIX: Validate venv Python works
+python --version > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo -e "${RED}[ERROR] Virtual environment Python is not working${NC}"
+    echo ""
+    echo "  This can happen when:"
+    echo "  - System Python was upgraded after venv was created"
+    echo "  - Venv files are corrupted"
+    echo "  - Venv is incomplete"
+    echo ""
+    echo "  Please delete the '.venv' directory and run this script again:"
+    echo "    rm -rf .venv"
+    echo ""
+    echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
+    exit 1
+fi
+
+# CRITICAL FIX: Validate venv Python version >= 3.10
+python -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" 2>/dev/null
+if [ $? -ne 0 ]; then
+    VENV_PYTHON_VERSION=$(python --version)
+    echo -e "${RED}[ERROR] Virtual environment Python version is incompatible${NC}"
+    echo "  Found: $VENV_PYTHON_VERSION"
+    echo "  Required: 3.10 or higher"
+    echo ""
+    echo "  This can happen when:"
+    echo "  - Venv was created with older Python version"
+    echo "  - System Python was upgraded"
+    echo ""
+    echo "  Please delete the '.venv' directory and run this script again:"
+    echo "    rm -rf .venv"
+    echo ""
+    echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
+    exit 1
+fi
+
 echo -e "${GREEN}[OK] Virtual environment activated${NC}"
+echo -e "${GREEN}[OK] Virtual environment Python is working${NC}"
 echo ""
 
 # Install dependencies
 echo -e "${YELLOW}[4/5] Installing dependencies...${NC}"
+
+# CRITICAL FIX: Check if pyproject.toml is newer than .requirements_installed
+INSTALL_DEPENDENCIES=0
 if [ ! -f "$REQUIREMENTS_INSTALLED" ]; then
+    INSTALL_DEPENDENCIES=1
+else
+    # Check if pyproject.toml exists and is newer
+    if [ -f "pyproject.toml" ]; then
+        if [ "pyproject.toml" -nt "$REQUIREMENTS_INSTALLED" ]; then
+            echo "  [INFO] pyproject.toml has been updated"
+            INSTALL_DEPENDENCIES=1
+        fi
+    fi
+fi
+
+if [ $INSTALL_DEPENDENCIES -eq 1 ]; then
     echo "  Installing packages (this may take a minute)..."
     pip install -e . >> "$LOG_FILE" 2>&1
     handle_error $? "Dependency installation"
