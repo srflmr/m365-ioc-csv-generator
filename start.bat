@@ -7,7 +7,7 @@ REM ============================================================================
 SETLOCAL EnableDelayedExpansion
 SET "APP_NAME=M365 IOC CSV Generator"
 SET "VENV_DIR=.venv"
-SET "PYTHON_CMD=python"
+SET "PYTHON_CMD="
 SET "LOG_FILE=setup.log"
 SET "REQUIREMENTS_INSTALLED=.requirements_installed"
 
@@ -22,12 +22,16 @@ echo.
 REM Check Python installation and version in one step
 echo [1/5] Checking Python installation (requires 3.10+)...
 
-REM Try multiple Python commands on Windows
+REM Try multiple Python commands on Windows with version validation
 for %%P in (python python3 py) do (
     %%P --version >nul 2>&1
     if !ERRORLEVEL! equ 0 (
-        set "PYTHON_CMD=%%P"
-        goto :python_found
+        REM Check if version is 3.10+ BEFORE accepting this command
+        %%P -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+        if !ERRORLEVEL! equ 0 (
+            set "PYTHON_CMD=%%P"
+            goto :python_found
+        )
     )
 )
 
@@ -42,17 +46,6 @@ exit /b 1
 :python_found
 for /f "tokens=*" %%i in ('%PYTHON_CMD% --version') do set PYTHON_VERSION=%%i
 echo   [OK] Found %PYTHON_VERSION%
-
-REM Validate version using inline check
-%PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo   [ERROR] Python 3.10 or higher is required
-    echo   Found: %PYTHON_VERSION%
-    echo.
-    echo   Please install a newer version of Python
-    pause
-    exit /b 1
-)
 echo   [OK] Python version is compatible
 echo.
 
@@ -60,17 +53,34 @@ REM Create virtual environment
 echo [2/5] Setting up virtual environment...
 if not exist "%VENV_DIR%" (
     echo   Creating virtual environment...
+
+    REM Test if we can write to log file first
+    echo. > "%LOG_FILE%" 2>nul
+    if !ERRORLEVEL! neq 0 (
+        echo   [ERROR] Cannot write to log file
+        echo   Current directory: %CD%
+        echo   Please check permissions and disk space
+        pause
+        exit /b 1
+    )
+
     %PYTHON_CMD% -m venv "%VENV_DIR%" >> "%LOG_FILE%" 2>&1
     if %ERRORLEVEL% neq 0 (
         echo   [ERROR] Failed to create virtual environment
-        echo   Check %LOG_FILE% for details
+        echo   Log file: %CD%\%LOG_FILE%
+        echo.
+        type "%LOG_FILE%"
+        echo.
         pause
         exit /b 1
     )
     REM Verify venv was created successfully
     if not exist "%VENV_DIR%\Scripts\activate.bat" (
         echo   [ERROR] Virtual environment creation failed - activate.bat not found
-        echo   Check %LOG_FILE% for details
+        echo   Log file: %CD%\%LOG_FILE%
+        echo.
+        type "%LOG_FILE%"
+        echo.
         pause
         exit /b 1
     )
@@ -81,6 +91,7 @@ if not exist "%VENV_DIR%" (
     if not exist "%VENV_DIR%\Scripts\activate.bat" (
         echo   [ERROR] Existing virtual environment is corrupted
         echo   Please delete the '.venv' folder and run this script again
+        echo   Folder location: %CD%\%VENV_DIR%
         pause
         exit /b 1
     )
@@ -93,6 +104,7 @@ echo [3/5] Activating virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
 if %ERRORLEVEL% neq 0 (
     echo   [ERROR] Failed to activate virtual environment
+    echo   Venv location: %CD%\%VENV_DIR%
     pause
     exit /b 1
 )
@@ -106,7 +118,10 @@ if not exist "%REQUIREMENTS_INSTALLED%" (
     pip install -e . >> "%LOG_FILE%" 2>&1
     if %ERRORLEVEL% neq 0 (
         echo   [ERROR] Failed to install dependencies
-        echo   Check %LOG_FILE% for details
+        echo   Log file: %CD%\%LOG_FILE%
+        echo.
+        type "%LOG_FILE%"
+        echo.
         pause
         exit /b 1
     )
@@ -120,8 +135,26 @@ echo.
 REM Create default directories
 echo [5/5] Creating default directories...
 if not exist "input" mkdir input
+if %ERRORLEVEL% neq 0 (
+    echo   [ERROR] Failed to create input directory
+    echo   Please check permissions
+    pause
+    exit /b 1
+)
 if not exist "output" mkdir output
+if %ERRORLEVEL% neq 0 (
+    echo   [ERROR] Failed to create output directory
+    echo   Please check permissions
+    pause
+    exit /b 1
+)
 if not exist "logs" mkdir logs
+if %ERRORLEVEL% neq 0 (
+    echo   [ERROR] Failed to create logs directory
+    echo   Please check permissions
+    pause
+    exit /b 1
+)
 echo   [OK] Directories ready
 echo.
 
@@ -142,6 +175,7 @@ if %ERRORLEVEL% neq 0 (
     echo ===============================================================================
     echo   [ERROR] Application exited with errors
     echo   Check logs in 'logs' directory for details
+    echo   Logs location: %CD%\logs\
     echo ===============================================================================
     echo.
     pause

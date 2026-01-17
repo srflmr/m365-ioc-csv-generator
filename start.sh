@@ -9,6 +9,7 @@ VENV_DIR=".venv"
 PYTHON_CMD=""
 LOG_FILE="setup.log"
 REQUIREMENTS_INSTALLED=".requirements_installed"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,12 +18,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to find Python command
+# Function to find Python command with version validation
 find_python_cmd() {
     # Try python3, python, py (Windows launcher), python.exe (Git Bash)
     for cmd in python3 python py python.exe; do
         if command -v "$cmd" &> /dev/null; then
-            # Check if version is 3.10+
+            # Check if version is 3.10+ BEFORE accepting this command
             if $cmd -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" 2>/dev/null; then
                 echo "$cmd"
                 return 0
@@ -32,13 +33,18 @@ find_python_cmd() {
     return 1
 }
 
-# Function to handle errors
+# Function to handle errors with full context
 handle_error() {
     local exit_code=$1
     local step_name="$2"
     if [ $exit_code -ne 0 ]; then
         echo -e "${RED}[ERROR] $step_name failed${NC}"
-        echo "  Check $LOG_FILE for details"
+        echo "  Log file: $SCRIPT_DIR/$LOG_FILE"
+        if [ -f "$SCRIPT_DIR/$LOG_FILE" ]; then
+            echo ""
+            echo "  Last 20 lines of log:"
+            tail -20 "$SCRIPT_DIR/$LOG_FILE" | sed 's/^/  /'
+        fi
         exit 1
     fi
 }
@@ -75,12 +81,30 @@ echo ""
 echo -e "${YELLOW}[2/5] Setting up virtual environment...${NC}"
 if [ ! -d "$VENV_DIR" ]; then
     echo "  Creating virtual environment..."
+
+    # Test if we can write to log file first
+    touch "$LOG_FILE" 2>/dev/null || {
+        echo -e "${RED}[ERROR] Cannot write to log file${NC}"
+        echo "  Current directory: $SCRIPT_DIR"
+        echo "  Please check permissions and disk space"
+        exit 1
+    }
+
     $PYTHON_CMD -m venv "$VENV_DIR" >> "$LOG_FILE" 2>&1
     VENV_EXIT_CODE=$?
 
     if [ $VENV_EXIT_CODE -ne 0 ]; then
         echo -e "${RED}[ERROR] Failed to create virtual environment${NC}"
-        echo "  Check $LOG_FILE for details"
+        echo "  Log file: $SCRIPT_DIR/$LOG_FILE"
+        echo ""
+        echo "  Error details:"
+        cat "$LOG_FILE" | sed 's/^/  /'
+        echo ""
+        echo ""
+        echo "  Possible causes:"
+        echo "  - python3-venv package not installed (install with: sudo apt install python3-venv)"
+        echo "  - Insufficient permissions"
+        echo "  - Disk space issue"
         exit 1
     fi
 
@@ -88,12 +112,11 @@ if [ ! -d "$VENV_DIR" ]; then
     if [ ! -f "$VENV_DIR/bin/activate" ]; then
         echo -e "${RED}[ERROR] Virtual environment creation failed${NC}"
         echo "  The 'bin/activate' file was not created"
-        echo "  Check $LOG_FILE for details"
+        echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
+        echo "  Log file: $SCRIPT_DIR/$LOG_FILE"
         echo ""
-        echo "  Possible causes:"
-        echo "  - python3-venv package not installed (install with: sudo apt install python3-venv)"
-        echo "  - Insufficient permissions"
-        echo "  - Disk space issue"
+        echo "  Error details:"
+        cat "$LOG_FILE" | sed 's/^/  /'
         exit 1
     fi
 
@@ -104,6 +127,7 @@ else
     if [ ! -f "$VENV_DIR/bin/activate" ]; then
         echo -e "${RED}[ERROR] Existing virtual environment is corrupted${NC}"
         echo "  Please delete the '.venv' directory and run this script again"
+        echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
         exit 1
     fi
     echo -e "${GREEN}[OK] Virtual environment already exists${NC}"
@@ -113,7 +137,11 @@ echo ""
 # Activate virtual environment
 echo -e "${YELLOW}[3/5] Activating virtual environment...${NC}"
 source "$VENV_DIR/bin/activate"
-handle_error $? "Virtual environment activation"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}[ERROR] Failed to activate virtual environment${NC}"
+    echo "  Venv location: $SCRIPT_DIR/$VENV_DIR"
+    exit 1
+fi
 echo -e "${GREEN}[OK] Virtual environment activated${NC}"
 echo ""
 
@@ -130,9 +158,23 @@ else
 fi
 echo ""
 
-# Create default directories
+# Create default directories with error checking
 echo -e "${YELLOW}[5/5] Creating default directories...${NC}"
-mkdir -p input output logs 2>> "$LOG_FILE"
+mkdir -p input 2>> "$LOG_FILE" || {
+    echo -e "${RED}[ERROR] Failed to create input directory${NC}"
+    echo "  Please check permissions"
+    exit 1
+}
+mkdir -p output 2>> "$LOG_FILE" || {
+    echo -e "${RED}[ERROR] Failed to create output directory${NC}"
+    echo "  Please check permissions"
+    exit 1
+}
+mkdir -p logs 2>> "$LOG_FILE" || {
+    echo -e "${RED}[ERROR] Failed to create logs directory${NC}"
+    echo "  Please check permissions"
+    exit 1
+}
 echo -e "${GREEN}[OK] Directories ready${NC}"
 echo ""
 
@@ -155,6 +197,7 @@ if [ $APP_EXIT_CODE -ne 0 ]; then
     echo "==============================================================================="
     echo -e "${RED}[ERROR] Application exited with errors${NC}"
     echo "  Check logs in 'logs' directory for details"
+    echo "  Logs location: $SCRIPT_DIR/logs/"
     echo "==============================================================================="
     echo ""
     exit 1
