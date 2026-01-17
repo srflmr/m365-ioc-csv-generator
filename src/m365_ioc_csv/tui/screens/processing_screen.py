@@ -24,6 +24,8 @@ from textual.widgets import (
 
 from m365_ioc_csv.core.config import Settings
 from m365_ioc_csv.core.csv_parser import CSVParser
+
+from m365_ioc_csv.core.excel_parser import ExcelParser, ExcelParseResult, ExcelSheetInfo
 from m365_ioc_csv.core.ioc_detector import IoCDetector, IoCType
 from m365_ioc_csv.core.ioc_unmasker import IoCUnmasker
 from m365_ioc_csv.core.csv_writer import CSVWriter

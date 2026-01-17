@@ -606,5 +606,5 @@ class CSVParser:
         Returns:
             True if file has CSV-like extension
         """
-        csv_extensions = {".csv", ".tsv", ".txt", ".log"}
+        csv_extensions = {".csv", ".tsv", ".txt", ".log", ".xlsx", ".xls"}
         return file_path.suffix.lower() in csv_extensions

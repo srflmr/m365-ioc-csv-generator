@@ -33,6 +33,8 @@ from textual.widgets import (
 
 from m365_ioc_csv.core.config import Settings, Action, Severity
 from m365_ioc_csv.core.csv_parser import CSVParser
+
+from m365_ioc_csv.core.excel_parser import ExcelParser, ExcelParseResult, ExcelSheetInfo
 from m365_ioc_csv.utils.logger import get_logger
 
 logger = get_logger(__name__)
