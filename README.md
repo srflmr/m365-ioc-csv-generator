@@ -219,9 +219,40 @@ For detailed usage instructions, see [USAGE.md](USAGE.md)
 
 ## Platform Support
 
-- **Windows** 10/11 with WSL or native Python
-- **Linux** (Ubuntu, Debian, RHEL, etc.)
+- **Windows** 10/11 (CMD, PowerShell, Git Bash)
+- **Linux** (Ubuntu, Debian, Fedora, RHEL, etc.)
 - **macOS** 10.15+
+
+### Multi-Platform Auto-Setup
+
+The launcher scripts automatically handle platform-specific differences:
+
+| Feature | Windows (start.bat) | Linux/macOS (start.sh) |
+|---------|---------------------|------------------------|
+| **Python Detection** | Tries: `python`, `python3`, `py` | Tries: `python3`, `python`, `py`, `python.exe` |
+| **Version Check** | Inline validation (3.10+) | Inline validation (3.10+) |
+| **Venv Creation** | Automatic via detected Python | Automatic via detected Python |
+| **Venv Activation** | `call .venv\Scripts\activate.bat` | `source .venv/bin/activate` |
+| **Dependencies** | `pip install -e .` (cached) | `pip install -e .` (cached) |
+| **App Launch** | Uses venv's `python` | Uses venv's `python` |
+
+### Virtual Environment (.venv)
+
+- **Auto-created** on first run
+- **Auto-activated** before launching app
+- **Cached dependencies** - only reinstall when needed
+- **Cross-platform** - works on Windows, Linux, and macOS
+- **Hidden by default** on Unix/Linux (`.venv` prefix)
+
+### Supported Python Installations
+
+| Platform | Python Commands Supported |
+|----------|---------------------------|
+| Windows CMD | `python`, `python3`, `py` (Python Launcher) |
+| Windows PowerShell | `python`, `python3`, `py` (Python Launcher) |
+| Git Bash (Windows) | `python.exe`, `py`, `python` |
+| Linux | `python3`, `python` |
+| macOS | `python3`, `python` |
 
 ## License
 
@@ -247,7 +278,9 @@ MIT License - see [LICENSE](LICENSE) file for details
   - start.sh: Added Windows-aware detection (python.exe, py)
   - Removed external file dependency (check_python_version.py)
   - Consolidated version validation into single step
-  - Scripts now use detected Python command consistently throughout
+  - Scripts use venv's Python for app launch (ensures correct environment)
+  - Renamed venv directory to `.venv` (hidden by default on Unix/Linux)
+  - Fixed error messages to reference `.venv` instead of `venv`
 
 #### v1.0.0
 - Initial release

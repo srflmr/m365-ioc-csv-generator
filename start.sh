@@ -103,7 +103,7 @@ else
     # Verify existing venv is valid
     if [ ! -f "$VENV_DIR/bin/activate" ]; then
         echo -e "${RED}[ERROR] Existing virtual environment is corrupted${NC}"
-        echo "  Please delete the 'venv' directory and run this script again"
+        echo "  Please delete the '.venv' directory and run this script again"
         exit 1
     fi
     echo -e "${GREEN}[OK] Virtual environment already exists${NC}"
@@ -145,7 +145,8 @@ echo -e "${BLUE}Press Ctrl+C to exit the application${NC}"
 echo ""
 
 # Run the app and capture exit code
-$PYTHON_CMD -m m365_ioc_csv
+# Use python from venv to ensure correct environment
+python -m m365_ioc_csv
 APP_EXIT_CODE=$?
 
 # Handle exit code

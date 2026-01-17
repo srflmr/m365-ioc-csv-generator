@@ -80,7 +80,7 @@ if not exist "%VENV_DIR%" (
     REM Verify existing venv is valid
     if not exist "%VENV_DIR%\Scripts\activate.bat" (
         echo   [ERROR] Existing virtual environment is corrupted
-        echo   Please delete the 'venv' folder and run this script again
+        echo   Please delete the '.venv' folder and run this script again
         pause
         exit /b 1
     )
@@ -133,7 +133,8 @@ echo.
 echo   Press Ctrl+C to exit the application
 echo.
 
-%PYTHON_CMD% -m m365_ioc_csv
+REM Use python from venv to ensure correct environment
+python -m m365_ioc_csv
 
 REM Handle exit code
 if %ERRORLEVEL% neq 0 (
