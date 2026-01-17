@@ -216,10 +216,8 @@ class IoCDetector:
             # results[IoCType.IP_ADDRESS] == ["192.168.1.1"]
             # results[IoCType.DOMAIN_NAME] == ["evil.com"]
         """
-        grouped: dict[IoCType, list[str]] = {
-            ioc_type for ioc_type in IoCType
-            if ioc_type not in (IoCType.UNKNOWN, IoCType.URL_NO_SCHEME)
-        }
+        # FIX: Initialize empty dict instead of broken dict comprehension
+        grouped: dict[IoCType, list[str]] = {}
 
         for value in values:
             match = self.detect(value)

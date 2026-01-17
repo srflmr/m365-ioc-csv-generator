@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Root cause: pip output was redirected to log file, hiding progress from user
   - Fix: Removed output redirection to show real-time pip progress
   - Added clear message about expected wait time (1-2 minutes)
+- **ioc_detector.py**: CRITICAL BUG - Fixed detect_batch() dictionary initialization
+  - Root cause: Broken dict comprehension created a SET instead of DICT
+  - Impact: Only 1 IoC was detected instead of all IoCs in batch
+  - Fix: Initialize empty dict and build it dynamically
 
 ### Changed
 - Improved user experience during dependency installation with visible progress
