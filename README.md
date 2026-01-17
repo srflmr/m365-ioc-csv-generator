@@ -260,11 +260,22 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.3.0
+**Current Version:** 2.5.0
 
 ### Changelog
 
-#### v2.3.0 (Current)
+#### v2.5.0 (Current)
+- **Fixed CMD compatibility issues** - Removed all PowerShell dependencies from start.bat
+  - Now uses pure CMD native commands only
+  - Removed timestamp comparison (source of parsing errors)
+  - Simplified dependency check to marker file existence only
+  - All paths are relative to script directory (using cd /d "%~dp0")
+  - Fully compatible with Windows CMD, no PowerShell required
+- **Version bump** - Launcher updated to v2.5
+
+#### v2.4.0
+
+#### v2.3.0
 - **Best practice improvements** - Enhanced both launcher scripts for reliability and consistency:
   - Added `cd` to script directory at startup for consistent path handling
   - Synchronized version numbers (both launchers now v2.3)

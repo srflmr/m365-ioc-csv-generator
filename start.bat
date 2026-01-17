@@ -2,7 +2,7 @@
 REM ==============================================================================
 REM M365 IOC CSV Generator - Auto-Setup Launcher for Windows
 REM This script automatically sets up the environment and launches the application.
-REM Version: 2.3
+REM Version: 2.5
 REM ==============================================================================
 
 SETLOCAL EnableDelayedExpansion
@@ -20,7 +20,7 @@ REM Header
 echo.
 echo ===============================================================================
 echo   %APP_NAME%
-echo   Auto-Setup Launcher v2.3
+echo   Auto-Setup Launcher v2.5
 echo ===============================================================================
 echo.
 
@@ -175,19 +175,11 @@ REM Install dependencies
 echo [4/5] Installing dependencies...
 
 REM Check if dependencies need to be installed
+REM Simplified logic: just check if marker file exists
+REM Skip timestamp comparison to avoid CMD parsing issues
 set "INSTALL_DEPENDENCIES=0"
 if not exist "%REQUIREMENTS_INSTALLED%" (
     set "INSTALL_DEPENDENCIES=1"
-) else (
-    REM Check if pyproject.toml exists and is newer using PowerShell
-    REM Use -File parameter to avoid argument parsing issues
-    if exist "pyproject.toml" (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $src = Get-Item 'pyproject.toml' -ErrorAction SilentlyContinue; $dst = Get-Item '%REQUIREMENTS_INSTALLED%' -ErrorAction SilentlyContinue; if ($src -and $dst -and $src.LastWriteTime -gt $dst.LastWriteTime) { exit 1 } else { exit 0 }" >nul 2>&1
-        if !ERRORLEVEL! equ 1 (
-            echo   [INFO] pyproject.toml has been updated
-            set "INSTALL_DEPENDENCIES=1"
-        )
-    )
 )
 
 if !INSTALL_DEPENDENCIES! equ 1 (
