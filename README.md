@@ -260,15 +260,23 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.2.0
+**Current Version:** 2.3.0
 
 ### Changelog
 
-#### v2.2.0 (Current)
+#### v2.3.0 (Current)
+- **Best practice improvements** - Enhanced both launcher scripts for reliability and consistency:
+  - Added `cd` to script directory at startup for consistent path handling
+  - Synchronized version numbers (both launchers now v2.3)
+  - Improved PowerShell command with explicit error handling and ExecutionPolicy
+  - Removed redundant SCRIPT_DIR calculation in start.sh (now uses pwd after cd)
+  - Consistent error messages and log file handling across both platforms
+- **Enhanced error handling** - Better PowerShell error action preference for reliable timestamp comparison
+
+#### v2.2.0
 - **Fixed critical bug in start.bat** - Resolved `... was unexpected at this time` error in dependency installation step
   - Issue: Batch file parsing error with `for` loop when comparing file timestamps
   - Fix: Use PowerShell for reliable timestamp comparison between files
-- **Version bump** - Launcher scripts updated to v2.2
 
 #### v2.1.0
 - **Improved directory creation** - Refactored to use loop for cleaner code and better error handling

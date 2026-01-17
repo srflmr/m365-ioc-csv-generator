@@ -2,22 +2,18 @@
 # ==============================================================================
 # M365 IOC CSV Generator - Auto-Setup Launcher for Linux/Mac
 # This script automatically sets up the environment and launches the application.
-# Version: 2.1
+# Version: 2.3
 # ==============================================================================
+
+# Change to script directory to ensure consistent paths
+cd "$(dirname "$0")" || exit 1
 
 APP_NAME="M365 IOC CSV Generator"
 VENV_DIR=".venv"
 PYTHON_CMD=""
 LOG_FILE="setup.log"
 REQUIREMENTS_INSTALLED=".requirements_installed"
-
-# MEDIUM FIX: Validate SCRIPT_DIR with error handling
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || {
-    echo -e "\033[0;31m[ERROR] Cannot determine script directory\033[0m"
-    echo "  Script may be accessed via broken symlink"
-    echo "  Current directory: $(pwd)"
-    exit 1
-}
+SCRIPT_DIR="$(pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -85,7 +81,7 @@ handle_error() {
 echo ""
 echo "==============================================================================="
 echo "  $APP_NAME"
-echo "  Auto-Setup Launcher v2.1"
+echo "  Auto-Setup Launcher v2.3"
 echo "==============================================================================="
 echo ""
 
@@ -226,7 +222,7 @@ echo ""
 # Install dependencies
 echo -e "${YELLOW}[4/5] Installing dependencies...${NC}"
 
-# CRITICAL FIX: Check if pyproject.toml is newer than .requirements_installed
+# Check if dependencies need to be installed
 INSTALL_DEPENDENCIES=0
 if [ ! -f "$REQUIREMENTS_INSTALLED" ]; then
     INSTALL_DEPENDENCIES=1

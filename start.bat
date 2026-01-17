@@ -2,10 +2,14 @@
 REM ==============================================================================
 REM M365 IOC CSV Generator - Auto-Setup Launcher for Windows
 REM This script automatically sets up the environment and launches the application.
-REM Version: 2.2
+REM Version: 2.3
 REM ==============================================================================
 
 SETLOCAL EnableDelayedExpansion
+
+REM Change to script directory to ensure consistent paths
+cd /d "%~dp0"
+
 SET "APP_NAME=M365 IOC CSV Generator"
 SET "VENV_DIR=.venv"
 SET "PYTHON_CMD="
@@ -16,7 +20,7 @@ REM Header
 echo.
 echo ===============================================================================
 echo   %APP_NAME%
-echo   Auto-Setup Launcher v2.2
+echo   Auto-Setup Launcher v2.3
 echo ===============================================================================
 echo.
 
@@ -74,7 +78,7 @@ if not exist "%VENV_DIR%" (
     )
 
     %PYTHON_CMD% -m venv "%VENV_DIR%" >> "%LOG_FILE%" 2>&1
-    if %ERRORLEVEL% neq 0 (
+    if !ERRORLEVEL! neq 0 (
         echo   [ERROR] Failed to create virtual environment
         echo   Log file: %CD%\%LOG_FILE%
         echo.
@@ -118,7 +122,7 @@ echo.
 REM Activate virtual environment
 echo [3/5] Activating virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
-if %ERRORLEVEL% neq 0 (
+if !ERRORLEVEL! neq 0 (
     echo   [ERROR] Failed to activate virtual environment
     echo   Venv location: %CD%\%VENV_DIR%
     pause
@@ -127,7 +131,7 @@ if %ERRORLEVEL% neq 0 (
 
 REM CRITICAL FIX: Validate venv Python works
 python --version >nul 2>&1
-if %ERRORLEVEL% neq 0 (
+if !ERRORLEVEL! neq 0 (
     echo   [ERROR] Virtual environment Python is not working
     echo.
     echo   This can happen when:
@@ -145,7 +149,7 @@ if %ERRORLEVEL% neq 0 (
 
 REM CRITICAL FIX: Validate venv Python version >= 3.10
 python -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
-if %ERRORLEVEL% neq 0 (
+if !ERRORLEVEL! neq 0 (
     for /f "tokens=*" %%i in ('python --version') do set VENV_PYTHON_VERSION=%%i
     echo   [ERROR] Virtual environment Python version is incompatible
     echo   Found: %VENV_PYTHON_VERSION%
@@ -176,9 +180,9 @@ if not exist "%REQUIREMENTS_INSTALLED%" (
     set "INSTALL_DEPENDENCIES=1"
 ) else (
     REM Check if pyproject.toml exists and is newer using PowerShell
-    REM Use separate command to avoid parsing issues
+    REM Use -File parameter to avoid argument parsing issues
     if exist "pyproject.toml" (
-        powershell -NoProfile -Command "$src = Get-Item 'pyproject.toml' -ErrorAction SilentlyContinue; $dst = Get-Item '%REQUIREMENTS_INSTALLED%' -ErrorAction SilentlyContinue; if ($src -and $dst -and $src.LastWriteTime -gt $dst.LastWriteTime) { exit 1 }" >nul 2>&1
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $src = Get-Item 'pyproject.toml' -ErrorAction SilentlyContinue; $dst = Get-Item '%REQUIREMENTS_INSTALLED%' -ErrorAction SilentlyContinue; if ($src -and $dst -and $src.LastWriteTime -gt $dst.LastWriteTime) { exit 1 } else { exit 0 }" >nul 2>&1
         if !ERRORLEVEL! equ 1 (
             echo   [INFO] pyproject.toml has been updated
             set "INSTALL_DEPENDENCIES=1"
@@ -189,7 +193,7 @@ if not exist "%REQUIREMENTS_INSTALLED%" (
 if !INSTALL_DEPENDENCIES! equ 1 (
     echo   Installing packages (this may take a minute)...
     pip install -e . >> "%LOG_FILE%" 2>&1
-    if %ERRORLEVEL% neq 0 (
+    if !ERRORLEVEL! neq 0 (
         echo   [ERROR] Failed to install dependencies
         echo   Log file: %CD%\%LOG_FILE%
         echo.
@@ -236,7 +240,7 @@ REM Use python from venv to ensure correct environment
 python -m m365_ioc_csv
 
 REM Handle exit code
-if %ERRORLEVEL% neq 0 (
+if !ERRORLEVEL! neq 0 (
     echo.
     echo ===============================================================================
     echo   [ERROR] Application exited with errors
