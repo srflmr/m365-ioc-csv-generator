@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2025-01-18
+
+### Fixed
+- **start.bat**: Fixed apparent "stuck" issue during dependency installation
+  - Root cause: pip output was redirected to log file, hiding progress from user
+  - Fix: Removed output redirection to show real-time pip progress
+  - Added clear message about expected wait time (1-2 minutes)
+
+### Changed
+- Improved user experience during dependency installation with visible progress
+
 ## [2.5.0] - 2025-01-18
 
 ### Fixed

@@ -260,6 +260,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.5.0
+**Current Version:** 2.6.0
 
 For detailed version history and changes, see [CHANGELOG.md](CHANGELOG.md)

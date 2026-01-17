@@ -2,7 +2,7 @@
 REM ==============================================================================
 REM M365 IOC CSV Generator - Auto-Setup Launcher for Windows
 REM This script automatically sets up the environment and launches the application.
-REM Version: 2.5
+REM Version: 2.6
 REM ==============================================================================
 
 SETLOCAL EnableDelayedExpansion
@@ -20,7 +20,7 @@ REM Header
 echo.
 echo ===============================================================================
 echo   %APP_NAME%
-echo   Auto-Setup Launcher v2.5
+echo   Auto-Setup Launcher v2.6
 echo ===============================================================================
 echo.
 
@@ -183,14 +183,14 @@ if not exist "%REQUIREMENTS_INSTALLED%" (
 )
 
 if !INSTALL_DEPENDENCIES! equ 1 (
-    echo   Installing packages (this may take a minute)...
-    pip install -e . >> "%LOG_FILE%" 2>&1
+    echo   Installing packages...
+    echo   This may take 1-2 minutes on first run. Please wait...
+    echo.
+    pip install -e .
     if !ERRORLEVEL! neq 0 (
+        echo.
         echo   [ERROR] Failed to install dependencies
         echo   Log file: %CD%\%LOG_FILE%
-        echo.
-        type "%LOG_FILE%"
-        echo.
         pause
         exit /b 1
     )
