@@ -1,6 +1,6 @@
 # M365 IOC CSV Generator - Complete Usage Guide
 
-A comprehensive guide to using the M365 IOC CSV Generator v2.0.
+A comprehensive guide to using the M365 IOC CSV Generator v2.5.
 
 ---
 
@@ -21,6 +21,10 @@ A comprehensive guide to using the M365 IOC CSV Generator v2.0.
 
 ---
 
+**Note:** For version history and detailed changes, see [CHANGELOG.md](CHANGELOG.md)
+
+---
+
 ## What is This Tool?
 
 The **M365 IOC CSV Generator** is a tool that helps you create CSV files for Microsoft 365 Defender. Microsoft 365 Defender can block malicious indicators like IP addresses, domains, and URLs. This tool converts your list of bad indicators into the correct format.
@@ -35,12 +39,13 @@ These are digital "fingerprints" that indicate malicious activity:
 - **Domain Names** - Malicious domains (phishing, malware distribution, etc.)
 - **URLs** - Full URLs to malicious content
 
-### New in v2.0
+### Key Features
 
 - **MD5 Hash Support** - Detect MD5 hashes (with warning about cryptographic weakness)
 - **IoC Unmasking** - Automatically detects and decodes obfuscated IoCs
 - **Timestamped Output** - Creates timestamped subdirectories for organized exports
 - **No URL Auto-Fix** - URLs without scheme are exported as-is (Microsoft handles normalization)
+- **Cross-Platform Launchers** - Auto-setup scripts for Windows (CMD), Linux, and macOS
 
 ---
 
@@ -779,7 +784,7 @@ If you encounter bugs or have feature requests, please report them through the p
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    QUICK REFERENCE (v2.0)                    │
+│                    QUICK REFERENCE (v2.5)                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  INSTALL:                                                   │
