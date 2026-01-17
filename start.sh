@@ -2,6 +2,7 @@
 # ==============================================================================
 # M365 IOC CSV Generator - Auto-Setup Launcher for Linux/Mac
 # This script automatically sets up the environment and launches the application.
+# Version: 2.1
 # ==============================================================================
 
 APP_NAME="M365 IOC CSV Generator"
@@ -84,7 +85,7 @@ handle_error() {
 echo ""
 echo "==============================================================================="
 echo "  $APP_NAME"
-echo "  Auto-Setup Launcher v2.0"
+echo "  Auto-Setup Launcher v2.1"
 echo "==============================================================================="
 echo ""
 
@@ -252,21 +253,16 @@ echo ""
 
 # Create default directories with error checking
 echo -e "${YELLOW}[5/5] Creating default directories...${NC}"
-mkdir -p input 2>> "$LOG_FILE" || {
-    echo -e "${RED}[ERROR] Failed to create input directory${NC}"
-    echo "  Please check permissions"
-    exit 1
-}
-mkdir -p output 2>> "$LOG_FILE" || {
-    echo -e "${RED}[ERROR] Failed to create output directory${NC}"
-    echo "  Please check permissions"
-    exit 1
-}
-mkdir -p logs 2>> "$LOG_FILE" || {
-    echo -e "${RED}[ERROR] Failed to create logs directory${NC}"
-    echo "  Please check permissions"
-    exit 1
-}
+for dir in input output logs; do
+    if [ ! -d "$dir" ]; then
+        mkdir -p "$dir" 2>> "$LOG_FILE" || {
+            echo -e "${RED}[ERROR] Failed to create $dir directory${NC}"
+            echo "  Please check permissions"
+            exit 1
+        }
+        echo -e "  ${GREEN}[OK] Created $dir directory${NC}"
+    fi
+done
 echo -e "${GREEN}[OK] Directories ready${NC}"
 echo ""
 

@@ -260,11 +260,18 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Version
 
-**Current Version:** 2.0.0
+**Current Version:** 2.1.0
 
 ### Changelog
 
-#### v2.0.0 (Current)
+#### v2.1.0 (Current)
+- **Fixed critical bug in start.bat** - Resolved `... was unexpected at this time` error in dependency installation step
+  - Issue: `for /f` command tried to execute `pyproject.toml` as a command
+  - Fix: Changed to proper `for` loop with `~t` modifier for file timestamps
+- **Improved directory creation** - Refactored to use loop for cleaner code and better error handling
+- **Version bump** - Launcher scripts updated to v2.1
+
+#### v2.0.0
 - Added MD5 hash support
 - Added IoC unmasking (Base64, Hex, URL-encoded, Defanged, Reversed)
 - Changed output to timestamped subdirectories

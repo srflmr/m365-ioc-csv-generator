@@ -2,6 +2,7 @@
 REM ==============================================================================
 REM M365 IOC CSV Generator - Auto-Setup Launcher for Windows
 REM This script automatically sets up the environment and launches the application.
+REM Version: 2.1
 REM ==============================================================================
 
 SETLOCAL EnableDelayedExpansion
@@ -15,7 +16,7 @@ REM Header
 echo.
 echo ===============================================================================
 echo   %APP_NAME%
-echo   Auto-Setup Launcher v2.0
+echo   Auto-Setup Launcher v2.1
 echo ===============================================================================
 echo.
 
@@ -169,15 +170,16 @@ echo.
 REM Install dependencies
 echo [4/5] Installing dependencies...
 
-REM CRITICAL FIX: Check if pyproject.toml is newer than .requirements_installed
+REM Check if dependencies need to be installed
 set "INSTALL_DEPENDENCIES=0"
 if not exist "%REQUIREMENTS_INSTALLED%" (
     set "INSTALL_DEPENDENCIES=1"
 ) else (
     REM Check if pyproject.toml exists and is newer
     if exist "pyproject.toml" (
-        for /f "tokens=*" %%A in ('pyproject.toml') do set PYPROJECT_TIME=%%~tA
-        for /f "tokens=*" %%B in ('%REQUIREMENTS_INSTALLED%') do set REQINST_TIME=%%~tB
+        REM Get file timestamps directly using ~t modifier
+        for %%A in ("pyproject.toml") do set "PYPROJECT_TIME=%%~tA"
+        for %%B in ("%REQUIREMENTS_INSTALLED%") do set "REQINST_TIME=%%~tB"
         REM Simple string comparison - not perfect but works for most cases
         if "!PYPROJECT_TIME!" gtr "!REQINST_TIME!" (
             echo   [INFO] pyproject.toml has been updated
@@ -208,38 +210,14 @@ echo.
 REM Create default directories
 echo [5/5] Creating default directories...
 
-REM MEDIUM FIX: Handle mkdir race condition
-if not exist "input" (
-    mkdir input
-    if %ERRORLEVEL% neq 0 (
-        if exist "input" (
-            echo   [WARNING] Another process created input directory
+REM Handle mkdir - already exists is OK, other errors are not
+for %%D in (input output logs) do (
+    if not exist "%%D" (
+        mkdir "%%D" 2>nul
+        if exist "%%D" (
+            echo   [OK] Created %%D directory
         ) else (
-            echo   [ERROR] Failed to create input directory
-            pause
-            exit /b 1
-        )
-    )
-)
-if not exist "output" (
-    mkdir output
-    if %ERRORLEVEL% neq 0 (
-        if exist "output" (
-            echo   [WARNING] Another process created output directory
-        ) else (
-            echo   [ERROR] Failed to create output directory
-            pause
-            exit /b 1
-        )
-    )
-)
-if not exist "logs" (
-    mkdir logs
-    if %ERRORLEVEL% neq 0 (
-        if exist "logs" (
-            echo   [WARNING] Another process created logs directory
-        ) else (
-            echo   [ERROR] Failed to create logs directory
+            echo   [ERROR] Failed to create %%D directory
             pause
             exit /b 1
         )
