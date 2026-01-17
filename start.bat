@@ -2,7 +2,7 @@
 REM ==============================================================================
 REM M365 IOC CSV Generator - Auto-Setup Launcher for Windows
 REM This script automatically sets up the environment and launches the application.
-REM Version: 2.1
+REM Version: 2.2
 REM ==============================================================================
 
 SETLOCAL EnableDelayedExpansion
@@ -16,7 +16,7 @@ REM Header
 echo.
 echo ===============================================================================
 echo   %APP_NAME%
-echo   Auto-Setup Launcher v2.1
+echo   Auto-Setup Launcher v2.2
 echo ===============================================================================
 echo.
 
@@ -175,13 +175,11 @@ set "INSTALL_DEPENDENCIES=0"
 if not exist "%REQUIREMENTS_INSTALLED%" (
     set "INSTALL_DEPENDENCIES=1"
 ) else (
-    REM Check if pyproject.toml exists and is newer
+    REM Check if pyproject.toml exists and is newer using PowerShell
+    REM Use separate command to avoid parsing issues
     if exist "pyproject.toml" (
-        REM Get file timestamps directly using ~t modifier
-        for %%A in ("pyproject.toml") do set "PYPROJECT_TIME=%%~tA"
-        for %%B in ("%REQUIREMENTS_INSTALLED%") do set "REQINST_TIME=%%~tB"
-        REM Simple string comparison - not perfect but works for most cases
-        if "!PYPROJECT_TIME!" gtr "!REQINST_TIME!" (
+        powershell -NoProfile -Command "$src = Get-Item 'pyproject.toml' -ErrorAction SilentlyContinue; $dst = Get-Item '%REQUIREMENTS_INSTALLED%' -ErrorAction SilentlyContinue; if ($src -and $dst -and $src.LastWriteTime -gt $dst.LastWriteTime) { exit 1 }" >nul 2>&1
+        if !ERRORLEVEL! equ 1 (
             echo   [INFO] pyproject.toml has been updated
             set "INSTALL_DEPENDENCIES=1"
         )
