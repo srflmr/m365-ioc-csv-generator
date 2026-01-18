@@ -31,10 +31,12 @@ Interactive TUI tool to generate Microsoft 365 Defender bulk import CSV files fr
 ### Supported Input Formats
 - **CSV** - Comma-separated values (auto-detects delimiter)
 - **Excel (.xlsx/.xls)** - Multi-sheet workbooks with sheet selection UI
-  - Multi-sheet support with SheetSelectionScreen
+  - Configure settings in MainScreen BEFORE selecting Excel file
+  - Sheet Selection Screen for choosing which sheets to process
+  - Displays sheet metadata (name, row count, estimated IoC count)
   - Automatic non-IoC filtering (N/A, NULL, comments, empty lines)
-  - Sheet metadata display (name, row count, estimated IoC count)
   - Select specific sheets or all sheets for processing
+  - All selected sheets are combined into one output per IoC type
 
 ### IoC Unmasking Techniques
 - **Base64** - `aHR0cHM6Ly9ldmlsLmNvbQ==` → `https://evil.com`
@@ -91,11 +93,23 @@ python -m m365_ioc_csv
 
 ## Basic Usage
 
+### CSV Files
+
 1. Run the application
 2. Browse and select a CSV file containing IoCs
 3. Configure options (action, severity, expiration, etc.)
 4. Press **▶ Process**
 5. Find output files in `output/ioc_export_YYYYMMDD_HHMMSS/`
+
+### Excel Files (.xlsx, .xls)
+
+1. **Configure settings FIRST** in MainScreen (action, severity, expiration, etc.)
+2. Select an Excel file from the file browser
+3. In the Sheet Selection Screen, choose which sheets to process
+4. Press **Process Selected** to process all selected sheets
+5. Find output files in `output/ioc_export_YYYYMMDD_HHMMSS/`
+
+> **Note for Excel files**: Configuration must be set BEFORE selecting the file. Settings are applied to all selected sheets.
 
 ## Input Format
 

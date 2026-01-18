@@ -1,6 +1,6 @@
 # M365 IOC CSV Generator - Complete Usage Guide
 
-A comprehensive guide to using the M365 IOC CSV Generator v2.5.
+A comprehensive guide to using the M365 IOC CSV Generator v3.0.
 
 ---
 
@@ -11,13 +11,14 @@ A comprehensive guide to using the M365 IOC CSV Generator v2.5.
 3. [First Steps](#first-steps)
 4. [Understanding the Interface](#understanding-the-interface)
 5. [Step-by-Step Tutorial](#step-by-step-tutorial)
-6. [Input File Formats](#input-file-formats)
-7. [IoC Detection & Classification](#ioc-detection--classification)
-8. [IoC Unmasking](#ioc-unmasking)
-9. [Configuration Options](#configuration-options)
-10. [Output Files](#output-files)
-11. [Common Use Cases](#common-use-cases)
-12. [Troubleshooting](#troubleshooting)
+6. [Excel File Processing](#excel-file-processing)
+7. [Input File Formats](#input-file-formats)
+8. [IoC Detection & Classification](#ioc-detection--classification)
+9. [IoC Unmasking](#ioc-unmasking)
+10. [Configuration Options](#configuration-options)
+11. [Output Files](#output-files)
+12. [Common Use Cases](#common-use-cases)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -137,7 +138,7 @@ Press `q` or `Ctrl+C` at any time, or click the **⏻ Exit** button.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  M365 IOC CSV Generator v2.0                  │
+│                  M365 IOC CSV Generator v3.0                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐  ┌─────────────────────────────────────┐ │
@@ -250,6 +251,148 @@ output/
 └── ioc_export_20250112_143022/
     └── M365_IOC_IpAddress_Block_20250112_143022.csv
 ```
+
+---
+
+## Excel File Processing
+
+### Overview
+
+Starting from v3.0, the application supports **Excel files (.xlsx, .xls)** with multi-sheet workbooks. This allows you to:
+
+- Select specific sheets to process from a workbook
+- View sheet metadata (name, row count, estimated IoC count)
+- Process multiple sheets in a single run
+
+### Important: Configuration Workflow
+
+**For Excel files, you must configure settings BEFORE selecting the file.**
+
+The workflow for Excel files is different from CSV files:
+
+```
+CSV Workflow:
+MainScreen (configure + select file) → ProcessingScreen
+
+Excel Workflow:
+MainScreen (configure FIRST) → Select Excel file → SheetSelectionScreen → ProcessingScreen
+```
+
+### Step-by-Step: Processing Excel Files
+
+#### Step 1: Configure Settings First
+
+Before selecting an Excel file, configure your output settings in the MainScreen:
+
+1. **Action**: Select action (Block, Audit, Warn, etc.)
+2. **Severity**: Set severity level (High, Medium, Low, Informational)
+3. **Expiration**: Choose expiration time (Never, 30/90/180/365 days)
+4. **Header**: Set header handling (Auto-detect, Always skip, Never skip)
+5. **Custom Title/Description**: Optional custom fields
+6. **Alert**: Enable/disable alert generation
+7. **Advanced Options**: RBAC groups, MITRE techniques, max rows per file
+
+> **Note**: These settings will be applied to ALL selected sheets from the Excel file.
+
+#### Step 2: Select Excel File
+
+1. Use the file browser to navigate to your Excel file (.xlsx or .xls)
+2. Press `Enter` on the file
+
+#### Step 3: Sheet Selection Screen
+
+After selecting an Excel file, you'll see the **Sheet Selection Screen**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              Select Sheets to Process                       │
+│                                                              │
+│  File: threat_intelligence.xlsx                            │
+│  Selected: 2 of 5 sheets                                    │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ Select │ Sheet Name      │ Rows  │ Est. IoCs │         │ │
+│  ├────────────────────────────────────────────────────────┤ │
+│  │ [X]     │ IP_Addresses   │ 150   │ 145       │         │ │
+│  │ [X]     │ Domains        │ 89    │ 85        │         │ │
+│  │ [ ]     │ URLs           │ 234   │ 0         │         │ │
+│  │ [ ]     │ Hashes         │ 45    │ 42        │         │ │
+│  │ [ ]     │ Metadata       │ 12    │ 0         │         │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  Navigate: UP/DOWN | Toggle: SPACE | Process: ENTER │        │
+│  ┌──────────┬──────────┬─────────────────┬──────────┐       │
+│  │Select All│Deselect  │Process Selected  │   Back   │       │
+│  │          │All       │                 │          │       │
+│  └──────────┴──────────┴─────────────────┴──────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Step 4: Select Sheets to Process
+
+Use the following methods to select/deselect sheets:
+
+| Method | Action |
+|--------|--------|
+| **Mouse Click** | Click on the `[ ]` checkbox column to toggle selection |
+| **SPACE Key** | Press SPACE on the highlighted row to toggle |
+| **Select All Button** | Select all sheets in the workbook |
+| **Deselect All Button** | Deselect all sheets |
+| **ENTER** | Process selected sheets |
+
+#### Step 5: Process
+
+1. After selecting sheets, press **ENTER** or click **Process Selected**
+2. The application will process all selected sheets using the configuration you set in MainScreen
+3. Output files will be generated in the `output/` directory
+
+### Sheet Information Display
+
+The Sheet Selection Screen shows:
+
+| Column | Description |
+|--------|-------------|
+| **Select** | Checkbox to toggle sheet selection |
+| **Sheet Name** | Name of the sheet in the workbook |
+| **Rows** | Total number of rows in the sheet |
+| **Est. IoCs** | Estimated count of valid IoCs (after filtering) |
+
+### Non-IoC Filtering
+
+The application automatically filters out non-IoC values:
+
+- Empty cells
+- `N/A`, `NULL`, `n/a`, `null`
+- Comment text (detected by common patterns)
+- Values that don't match any IoC pattern
+
+This is why "Est. IoCs" may be lower than "Rows".
+
+### Output for Excel Files
+
+When processing multiple sheets:
+
+1. Each sheet is processed independently
+2. All IoCs from all selected sheets are combined
+3. Output files are generated by IoC type (not by sheet)
+4. Example: If Sheet1 has 10 IPs and Sheet2 has 5 IPs, you'll get one CSV with 15 IP addresses
+
+### Modifying Configuration
+
+If you need to change settings after selecting an Excel file:
+
+1. Press **ESC** or click **Back** to return to MainScreen
+2. Modify your configuration
+3. Re-select the Excel file
+4. Select sheets again
+5. Process
+
+### Tips for Excel Files
+
+- **Review sheet metadata** before processing to avoid processing non-IoC data
+- **Use selective processing** to skip sheets with metadata or reference data
+- **Est. IoCs count** helps identify sheets with actual threat data
+- **All selected sheets are combined** into one output set per IoC type
 
 ---
 
@@ -769,9 +912,9 @@ logs/M365_IOC_CSV_YYYYMMDD.log
 
 Use the included sample files to test:
 ```bash
-input/sample_iocs.csv        # Basic IoC types
-input/test_masked_iocs.csv   # Obfuscated IoCs
-input/test_md5_iocs.csv      # MD5 hashes
+input/sample_iocs.csv              # Basic IoC types
+input/sample_ioc_collection.xlsx   # Excel with multiple sheets
+input/sample_simple_list.xlsx      # Excel simple list
 ```
 
 ### Report Issues
@@ -784,18 +927,25 @@ If you encounter bugs or have feature requests, please report them through the p
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    QUICK REFERENCE (v2.5)                    │
+│                    QUICK REFERENCE (v3.0)                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  INSTALL:                                                   │
 │    Windows: Double-click start.bat                        │
 │    Linux/mac: ./start.sh                                   │
 │                                                             │
-│  BASIC WORKFLOW:                                            │
+│  CSV WORKFLOW:                                              │
 │    1. Select CSV file from file browser                    │
 │    2. Configure options (or use defaults)                   │
 │    3. Press ▶ Process                                      │
 │    4. Find output in output/ioc_export_YYYYMMDD_HHMMSS/    │
+│                                                             │
+│  EXCEL WORKFLOW:                                            │
+│    1. Configure options FIRST in MainScreen                 │
+│    2. Select Excel file (.xlsx/.xls)                       │
+│    3. Choose sheets to process in SheetSelectionScreen     │
+│    4. Press Process Selected or ENTER                       │
+│    5. Find output in output/ioc_export_YYYYMMDD_HHMMSS/    │
 │                                                             │
 │  SUPPORTED IoCs:                                            │
 │    • SHA256: 64 hex chars                                  │

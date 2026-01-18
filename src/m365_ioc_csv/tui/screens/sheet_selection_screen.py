@@ -8,20 +8,15 @@ Displays sheet metadata (name, row count, estimated IoC count).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container
 from textual.screen import Screen
-from textual.widgets import (
-    Button,
-    DataTable,
-    Label,
-    Static,
-)
+from textual.widgets import Button, DataTable, Label
 
-from m365_ioc_csv.core.excel_parser import ExcelParser, ExcelSheetInfo
+from m365_ioc_csv.core.excel_parser import ExcelSheetInfo
 from m365_ioc_csv.core.config import Settings
 from m365_ioc_csv.utils.logger import get_logger
 
@@ -123,10 +118,9 @@ class SheetSelectionScreen(Screen):
         self.sheets = sheets
         self.settings = settings
         self.skip_header = skip_header
-        self.selected_sheets: set[str] = set()
 
         # Auto-select all sheets by default
-        self.selected_sheets = {sheet.name for sheet in sheets}
+        self.selected_sheets: set[str] = {sheet.name for sheet in sheets}
 
         logger.info(
             f"SheetSelectionScreen initialized for {excel_file.name} "
@@ -138,7 +132,7 @@ class SheetSelectionScreen(Screen):
         # Header with file info
         with Container(id="header-container"):
             yield Label(
-                f"📊 Select Sheets to Process",
+                "Select Sheets to Process",
                 classes="header-text",
                 id="header-title"
             )
@@ -148,7 +142,7 @@ class SheetSelectionScreen(Screen):
                 id="file-name"
             )
             yield Label(
-                f"Selected: ",
+                "Selected: ",
                 classes="info-text",
                 id="selected-label"
             )
@@ -164,15 +158,15 @@ class SheetSelectionScreen(Screen):
 
         # Action buttons
         with Container(id="action-container"):
-            yield Button("✓ Select All", id="select-all-btn", variant="default")
-            yield Button("✗ Deselect All", id="deselect-all-btn", variant="default")
-            yield Button("▶ Process Selected", id="process-btn", variant="primary")
-            yield Button("← Back", id="back-btn", variant="default")
+            yield Button("Select All", id="select-all-btn", variant="default")
+            yield Button("Deselect All", id="deselect-all-btn", variant="default")
+            yield Button("Process Selected", id="process-btn", variant="primary")
+            yield Button("Back", id="back-btn", variant="default")
 
         # Footer info
         with Container(id="footer-container"):
             yield Label(
-                f"[SPACE] Toggle selection | [ENTER] Process | [ESC] Back",
+                "Navigate: UP/DOWN | Toggle: SPACE | Process: ENTER | Back: ESC",
                 classes="info-text"
             )
 
@@ -181,16 +175,16 @@ class SheetSelectionScreen(Screen):
         # Setup DataTable
         table = self.query_one("#sheets-table", DataTable)
 
-        # Add columns
-        table.add_column("Select", width=8)
-        table.add_column("Sheet Name", width=40)
-        table.add_column("Rows", width=10)
-        table.add_column("Est. IoCs", width=12)
+        # Add columns - using string keys for consistency
+        table.add_column("select", key="select", width=8)
+        table.add_column("Sheet Name", key="name", width=40)
+        table.add_column("Rows", key="rows", width=10)
+        table.add_column("Est. IoCs", key="iocs", width=12)
 
         # Add rows for each sheet
         for sheet in self.sheets:
-            checked = "✓" if sheet.name in self.selected_sheets else "✗"
-            row_key = table.add_row(
+            checked = "[X]" if sheet.name in self.selected_sheets else "[ ]"
+            table.add_row(
                 checked,
                 sheet.name,
                 str(sheet.row_count),
@@ -200,26 +194,31 @@ class SheetSelectionScreen(Screen):
 
         logger.info(f"DataTable populated with {len(self.sheets)} sheets")
 
-    @on(DataTable.RowSelected, "#sheets-table")
-    def on_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection (toggle checkbox)."""
+    def _toggle_selection(self, sheet_name: str) -> None:
+        """Toggle selection for a specific sheet."""
         table = self.query_one("#sheets-table", DataTable)
-        row_key = event.row_key
 
-        # Get sheet name from row key
-        if row_key and row_key in self.selected_sheets:
-            # Deselect
-            self.selected_sheets.discard(row_key)
-            table.update_cell(row_key, "Select", "✗")
-        elif row_key:
-            # Select
-            self.selected_sheets.add(row_key)
-            table.update_cell(row_key, "Select", "✓")
+        if sheet_name in self.selected_sheets:
+            self.selected_sheets.discard(sheet_name)
+            table.update_cell(sheet_name, "select", "[ ]")
+        else:
+            self.selected_sheets.add(sheet_name)
+            table.update_cell(sheet_name, "select", "[X]")
 
-        # Update count display
         self._update_selected_count()
+        logger.debug(f"Sheet selection toggled: {sheet_name}")
 
-        logger.debug(f"Sheet selection changed: {len(self.selected_sheets)} selected")
+    @on(DataTable.CellSelected, "#sheets-table")
+    def on_cell_selected(self, event: DataTable.CellSelected) -> None:
+        """Handle cell selection - toggle checkbox when clicking on Select column."""
+        # CellSelected has cell_key which contains row_key and column_key
+        row_key = event.cell_key.row_key
+        column_key = event.cell_key.column_key
+
+        # Only toggle if clicking on the "select" column
+        if str(column_key) == "select":
+            sheet_name = str(row_key)
+            self._toggle_selection(sheet_name)
 
     @on(Button.Pressed, "#select-all-btn")
     def on_select_all_pressed(self) -> None:
@@ -228,7 +227,7 @@ class SheetSelectionScreen(Screen):
 
         for sheet in self.sheets:
             self.selected_sheets.add(sheet.name)
-            table.update_cell(sheet.name, "Select", "✓")
+            table.update_cell(sheet.name, "select", "[X]")
 
         self._update_selected_count()
         logger.info("All sheets selected")
@@ -240,7 +239,7 @@ class SheetSelectionScreen(Screen):
 
         for sheet in self.sheets:
             self.selected_sheets.discard(sheet.name)
-            table.update_cell(sheet.name, "Select", "✗")
+            table.update_cell(sheet.name, "select", "[ ]")
 
         self._update_selected_count()
         logger.info("All sheets deselected")
@@ -285,6 +284,21 @@ class SheetSelectionScreen(Screen):
         # ESC to go back
         if event.key == "escape":
             self.app.pop_screen()
+            return
+
         # ENTER to process
         if event.key == "enter":
             self.on_process_pressed()
+            return
+
+        # SPACE to toggle selection on current row
+        if event.key == "space":
+            event.stop()
+            table = self.query_one("#sheets-table", DataTable)
+            # Get the row_key from cursor coordinate (proper way per Textual docs)
+            row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+            if row_key is not None:
+                # Get sheet name from table data (column 1 is "Sheet Name")
+                sheet_data = table.get_row(row_key)
+                sheet_name = str(sheet_data[1])
+                self._toggle_selection(sheet_name)
